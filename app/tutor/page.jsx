@@ -145,6 +145,8 @@ export default function Tutor() {
                   {material.meta.paginas > 0 &&
                     `${material.meta.paginas} ${t.tutor.paginas} · `}
                   {material.meta.caracteres.toLocaleString()} {t.tutor.caracteres}
+                  {material.meta.partes > 1 &&
+                    ` · ${t.tutor.leidoEn} ${material.meta.partes} ${t.tutor.partes}`}
                 </p>
               </div>
               <button
@@ -159,10 +161,22 @@ export default function Tutor() {
               </button>
             </div>
 
-            {material.meta.recortado && (
-              <p className="mt-4 rounded-2xl border border-ambar/30 bg-ambar/10 px-4 py-2.5 text-xs text-ambar">
-                {t.tutor.recortado}
-              </p>
+            {(material.meta.recortado || material.meta.partesFallidas > 0) && (
+              <div className="mt-4 space-y-2">
+                {material.meta.recortado && (
+                  <p className="rounded-2xl border border-ambar/30 bg-ambar/10 px-4 py-2.5 text-xs text-ambar">
+                    {t.tutor.recortado}
+                  </p>
+                )}
+                {material.meta.partesFallidas > 0 && (
+                  <p className="rounded-2xl border border-hielo bg-nube px-4 py-2.5 text-xs text-acero">
+                    {material.meta.partesFallidas}{" "}
+                    {material.meta.partesFallidas === 1
+                      ? t.tutor.parteFallida
+                      : t.tutor.partesFallidas}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

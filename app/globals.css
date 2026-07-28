@@ -1,0 +1,313 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --font-display: "Cormorant Garamond";
+  --font-sans: "Figtree";
+  --font-mono: "IBM Plex Mono";
+}
+
+::selection {
+  background: #3d7ae0;
+  color: #060d20;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* El fondo ya no es blanco puro: un degradado azulado muy tenue que da
+   profundidad y hace que las tarjetas blancas destaquen en lugar de
+   fundirse con la página. */
+/* Toda la página vive sobre azul abisal: dos halos de color arriba y abajo
+   sobre un degradado profundo, fijo al hacer scroll. */
+body {
+  @apply bg-abismo text-tinta font-sans antialiased;
+  background-image: radial-gradient(
+      64rem 34rem at 82% -8%,
+      rgba(61, 122, 224, 0.16),
+      transparent 60%
+    ),
+    radial-gradient(52rem 30rem at 6% 12%, rgba(31, 74, 168, 0.14), transparent 58%),
+    linear-gradient(180deg, #060d20 0%, #0a1533 45%, #060d20 100%);
+  background-attachment: fixed;
+  font-feature-settings: "liga" 1, "kern" 1;
+}
+
+/* ---- Superficies oscuras ---- */
+
+/* Banda inmersiva: se separa del fondo de la página subiendo un escalón
+   de luminosidad y añadiendo halos más intensos.
+   El degradado de base va con alfa a propósito — si fuera opaco taparía el
+   campo de partículas, que vive en la capa fija del fondo. */
+.seccion-abisal {
+  @apply relative overflow-hidden text-white;
+  background-image: radial-gradient(
+      70rem 34rem at 78% -12%,
+      rgba(61, 122, 224, 0.3),
+      transparent 62%
+    ),
+    radial-gradient(50rem 30rem at 8% 108%, rgba(31, 74, 168, 0.34), transparent 60%),
+    linear-gradient(
+      180deg,
+      rgba(10, 21, 51, 0.82) 0%,
+      rgba(14, 31, 71, 0.82) 55%,
+      rgba(9, 18, 48, 0.88) 100%
+    );
+}
+
+/* Tarjeta de cristal sobre fondo oscuro */
+.tarjeta-oscura {
+  @apply rounded-3xl border border-white/[0.12] bg-white/[0.07] shadow-tarjeta backdrop-blur-xl;
+}
+
+/* ---- Volteo 3D de las flashcards ----
+   Tailwind no trae utilidades de perspectiva ni de cara oculta. */
+.perspectiva {
+  perspective: 1400px;
+}
+.cara-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cara-3d-girada {
+  transform: rotateY(180deg);
+}
+.cara {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.cara-reverso {
+  transform: rotateY(180deg);
+}
+
+/* Halo giratorio detrás de un elemento destacado */
+.halo-orbital {
+  @apply pointer-events-none absolute -inset-px rounded-[inherit] opacity-70;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(61, 122, 224, 0.55) 60deg,
+    transparent 140deg,
+    transparent 220deg,
+    rgba(127, 176, 245, 0.4) 290deg,
+    transparent 360deg
+  );
+}
+
+/* Titular con degradado azul en movimiento, sobre fondo claro */
+.titulo-gradiente {
+  @apply animate-gradiente-vivo bg-gradient-to-r from-cobalto via-marino to-cobalto bg-clip-text text-transparent;
+  background-size: 220% 100%;
+}
+
+/* El mismo recurso, invertido para fondos oscuros */
+.titulo-gradiente-claro {
+  @apply animate-gradiente-vivo bg-gradient-to-r from-celeste via-white to-electrico bg-clip-text text-transparent;
+  background-size: 220% 100%;
+}
+
+/* Titulares serif con números elegantes */
+.titulo {
+  @apply font-display;
+  font-feature-settings: "lnum" 1;
+  letter-spacing: -0.01em;
+}
+
+/* Etiqueta pequeña en mayúsculas — el hilo tipográfico de toda la interfaz */
+.etiqueta {
+  @apply text-[11px] font-medium uppercase tracking-etiqueta text-acero;
+}
+
+.etiqueta-clara {
+  @apply text-[11px] font-medium uppercase tracking-etiqueta text-bruma;
+}
+
+/* Regla fina con punto central, divisor de secciones */
+.divisor {
+  @apply relative my-0 h-px w-full bg-hielo;
+}
+.divisor::after {
+  content: "";
+  @apply absolute left-1/2 top-1/2 h-[5px] w-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cobalto;
+}
+
+/* Enlace discreto con subrayado fino */
+.enlace {
+  @apply text-cobalto underline decoration-hielo underline-offset-4 transition-colors hover:decoration-cobalto;
+}
+
+/* Botones */
+/* Botón principal: azul brillante con texto abisal. Sobre una interfaz
+   oscura, invertir el contraste rinde mucho mejor que blanco sobre azul. */
+.boton-primario {
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-electrico px-7 py-3 text-sm font-medium text-abismo shadow-azul transition-all duration-300 hover:-translate-y-0.5 hover:bg-celeste focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-celeste disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
+}
+
+/* Destello que cruza el botón al pasar el ratón */
+.boton-primario::after {
+  content: "";
+  @apply pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[20deg] bg-white/35 opacity-0 transition-all duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)];
+}
+.boton-primario:hover::after {
+  @apply left-[150%] opacity-100;
+}
+
+.boton-secundario {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-hielo bg-papel/70 px-7 py-3 text-sm font-medium text-tinta backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-cobalto hover:bg-papel hover:text-cobalto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalto disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Botón de acento: la acción que de verdad importa en cada pantalla.
+   Naranja sobre azul profundo, con texto abisal para máximo contraste. */
+.boton-acento {
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-ambar px-7 py-3 text-sm font-semibold text-abismo shadow-naranja transition-all duration-300 hover:-translate-y-0.5 hover:bg-ambarVivo focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ambar disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
+}
+
+.boton-acento::after {
+  content: "";
+  @apply pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[20deg] bg-white/40 opacity-0 transition-all duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)];
+}
+.boton-acento:hover::after {
+  @apply left-[150%] opacity-100;
+}
+
+/* Botón secundario para superficies oscuras */
+.boton-secundario-claro {
+  @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/25 bg-white/5 px-7 py-3 text-sm font-medium text-white backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-celeste/70 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-celeste;
+}
+
+/* Tarjeta base. El filo de luz superior es lo que la hace parecer cristal
+   y no un rectángulo oscuro plano: simula el borde iluminado por arriba. */
+.tarjeta {
+  @apply rounded-3xl border border-hielo bg-papel;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+/* Tarjeta que reacciona: se eleva y su sombra se tiñe de cobalto */
+.tarjeta-viva {
+  @apply transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-cobalto/30 hover:shadow-elevada;
+}
+
+/* Superficie de cristal sobre el fondo azul */
+.tarjeta-cristal {
+  @apply rounded-3xl border border-white/10 bg-papel/60 shadow-suave backdrop-blur-xl;
+}
+
+/* La traza: línea vertical que recorre los pasos del razonamiento */
+.traza {
+  @apply relative pl-8;
+}
+.traza::before {
+  content: "";
+  @apply absolute left-[9px] top-2 bottom-2 w-px bg-hielo;
+}
+
+.traza-punto {
+  @apply absolute left-0 top-1.5 flex h-[19px] w-[19px] items-center justify-center rounded-full border border-hielo bg-papel text-[10px] font-medium text-acero;
+}
+
+.traza-punto-error {
+  @apply border-ambar bg-ambar text-abismo animate-pulso;
+}
+
+.traza-punto-ok {
+  @apply border-cobalto/40 text-cobalto;
+}
+
+/* Campos de formulario */
+.campo {
+  @apply w-full rounded-2xl border border-hielo bg-papel px-4 py-3 text-sm text-tinta placeholder-acero/60 transition-colors focus:border-cobalto focus:outline-none focus:ring-4 focus:ring-cobalto/[0.12];
+}
+
+/* Barra de calor para el panel docente */
+.barra-calor {
+  @apply h-2 rounded-full bg-gradient-to-r from-electrico to-celeste shadow-azul transition-all duration-700;
+}
+
+/* ============================================================
+   Pantallas de acceso
+   ============================================================ */
+
+/* Campo con etiqueta flotante.
+   El input necesita placeholder=" " y la clase "peer" en el JSX
+   (Tailwind no permite @apply peer). */
+.campo-flotante {
+  @apply w-full rounded-2xl border border-hielo bg-papel px-4 pb-2.5 pt-6 text-sm text-tinta transition-all duration-200 placeholder:text-transparent focus:border-cobalto focus:outline-none focus:ring-4 focus:ring-cobalto/[0.12];
+}
+
+.campo-flotante-error {
+  @apply border-ambar focus:border-ambar focus:ring-ambar/15;
+}
+
+.etiqueta-flotante {
+  @apply pointer-events-none absolute left-4 top-2 text-[10px] font-medium uppercase tracking-etiqueta text-acero transition-all duration-200
+         peer-placeholder-shown:top-[17px] peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-acero/70
+         peer-focus:top-2 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-etiqueta peer-focus:text-cobalto;
+}
+
+/* Selector segmentado con indicador deslizante */
+.segmento {
+  @apply relative z-10 flex-1 rounded-full px-4 py-2 text-center text-sm transition-colors duration-300;
+}
+
+.segmento-activo {
+  @apply font-medium text-tinta;
+}
+
+.segmento-inactivo {
+  @apply text-acero hover:text-tinta;
+}
+
+/* Casilla de verificación personalizada */
+.casilla {
+  @apply grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[6px] border border-hielo bg-papel transition-all duration-200;
+}
+
+.casilla-marcada {
+  @apply border-electrico bg-electrico;
+}
+
+/* Botón fantasma para el acceso de invitado.
+   Necesita la clase "group" en el JSX (Tailwind no permite @apply group). */
+.boton-fantasma {
+  @apply relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full border border-hielo bg-papel px-7 py-3 text-sm font-medium text-tinta transition-all duration-300 hover:border-cobalto/50 hover:bg-nube focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cobalto;
+}
+
+/* Orbes de luz del panel de marca */
+.orbe {
+  @apply pointer-events-none absolute rounded-full blur-[70px];
+}
+
+/* Traza en versión oscura, para el panel de marca */
+.traza-oscura {
+  @apply relative pl-8;
+}
+.traza-oscura::before {
+  content: "";
+  @apply absolute left-[9px] top-2 bottom-2 w-px bg-white/15;
+}
+
+.traza-punto-oscuro {
+  @apply absolute left-0 top-[3px] flex h-[19px] w-[19px] items-center justify-center rounded-full border border-white/20 bg-profundo text-[10px] font-medium text-bruma;
+}
+
+/* El paso roto sobre el panel de marca */
+.traza-punto-error-oscuro {
+  @apply !border-ambar !bg-ambar !text-abismo;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

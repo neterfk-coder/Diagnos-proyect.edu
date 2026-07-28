@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+build/
+
+# Variables de entorno: nunca deben salir del equipo.
+# Contienen la clave de Groq y la API key de Appwrite.
+.env
+.env*.local
+.env.local
+.env.production
+
+.vercel
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

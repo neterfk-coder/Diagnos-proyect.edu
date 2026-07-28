@@ -181,11 +181,15 @@ export async function POST(peticion) {
       model: modelo,
       // Margen amplio: los tokens de razonamiento salen de aquí, y quedarse
       // corto produce JSON truncado en lugar de un error claro.
-      max_completion_tokens: 4000,
+      max_completion_tokens: conImagen ? 2000 : 4000,
       // Temperatura baja: aquí interesa que siga las reglas, no que sea creativo.
       temperature: 0.2,
       response_format: formato,
-      ...(conImagen ? {} : { reasoning_effort: "low" }),
+      // Cada modelo admite valores distintos: gpt-oss acepta low/medium/high,
+      // qwen solo none/default. En la ruta con foto se desactiva el
+      // razonamiento porque disparaba la latencia por encima del límite de
+      // tiempo de la función en producción.
+      reasoning_effort: conImagen ? "none" : "low",
       messages: [
         { role: "system", content: sistema(idioma) },
         { role: "user", content: contenidoUsuario },

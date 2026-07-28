@@ -18,18 +18,27 @@ export default function Analizar() {
     setCargando(true);
     setError(null);
     setDiagnostico(null);
+    // La función tiene 60 s en producción. Se corta antes para poder dar un
+    // mensaje propio en vez de la página de error de la plataforma.
+    const corte = new AbortController();
+    const reloj = setTimeout(() => corte.abort(), 55000);
+
     try {
       const res = await fetch("/api/diagnose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...datos, idioma }),
+        signal: corte.signal,
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setDiagnostico(json);
     } catch (e) {
-      setError(e.message || t.analizar.errorGenerico);
+      setError(
+        e.name === "AbortError" ? t.analizar.errorLento : e.message || t.analizar.errorGenerico
+      );
     } finally {
+      clearTimeout(reloj);
       setCargando(false);
     }
   }

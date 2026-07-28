@@ -10,14 +10,56 @@ export default function ZonaCarga({ onAnalizar, cargando }) {
   const [arrastrando, setArrastrando] = useState(false);
   const inputArchivo = useRef(null);
 
-  function leerArchivo(archivo) {
+  /**
+   * Reduce la foto antes de enviarla. Una imagen de móvil son varios miles
+   * de píxeles de lado; el modelo de visión la escala igualmente, así que
+   * mandarla entera solo añade tokens, latencia y riesgo de que la función
+   * agote su tiempo. 1400 px de lado largo conserva de sobra la letra a mano.
+   */
+  function reducir(archivo) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(archivo);
+      const img = new Image();
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const LADO = 1400;
+        const escala = Math.min(1, LADO / Math.max(img.width, img.height));
+
+        // Ya es pequeña: no merece la pena recomprimirla y perder nitidez
+        if (escala === 1 && archivo.size < 900 * 1024) {
+          const lector = new FileReader();
+          lector.onload = () =>
+            resolve({ datos: String(lector.result), tipo: archivo.type });
+          lector.readAsDataURL(archivo);
+          return;
+        }
+
+        const lienzo = document.createElement("canvas");
+        lienzo.width = Math.round(img.width * escala);
+        lienzo.height = Math.round(img.height * escala);
+        const ctx = lienzo.getContext("2d");
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, lienzo.width, lienzo.height);
+        resolve({ datos: lienzo.toDataURL("image/jpeg", 0.85), tipo: "image/jpeg" });
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("imagen ilegible"));
+      };
+      img.src = url;
+    });
+  }
+
+  async function leerArchivo(archivo) {
     if (!archivo || !archivo.type.startsWith("image/")) return;
-    const lector = new FileReader();
-    lector.onload = () => {
-      const base64 = String(lector.result).split(",")[1];
-      setImagen({ base64, tipo: archivo.type, previa: String(lector.result) });
-    };
-    lector.readAsDataURL(archivo);
+    try {
+      const { datos, tipo } = await reducir(archivo);
+      setImagen({ base64: datos.split(",")[1], tipo, previa: datos });
+    } catch {
+      /* si la reducción falla se ignora el archivo, no se sube en crudo */
+    }
   }
 
   function enviar() {

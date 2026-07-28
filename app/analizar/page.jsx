@@ -7,6 +7,7 @@ import ChatSocratico from "@/components/ChatSocratico";
 import PracticaDirigida from "@/components/PracticaDirigida";
 import { useIdioma } from "@/lib/i18n/contexto";
 import { textoMisconception } from "@/lib/misconceptions";
+import { crearJWT } from "@/lib/cuenta";
 
 export default function Analizar() {
   const { t, idioma } = useIdioma();
@@ -24,10 +25,13 @@ export default function Analizar() {
     const reloj = setTimeout(() => corte.abort(), 55000);
 
     try {
+      // El servidor deduce el aula de este token, no de lo que le mandemos:
+      // así un estudiante no puede colar diagnósticos en otra clase.
+      const jwt = await crearJWT();
       const res = await fetch("/api/diagnose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...datos, idioma }),
+        body: JSON.stringify({ ...datos, idioma, jwt }),
         signal: corte.signal,
       });
       const json = await res.json();

@@ -148,15 +148,23 @@ dialogue, targeted practice, the PDF study tutor, the teacher dashboard, and
 on Appwrite Auth (`lib/cuenta.js`, `lib/sesion.jsx`). Guest mode stays local so the
 project does not accumulate an anonymous user per visit.
 
+The practice loop closes: the student solves the targeted exercises, and
+`/api/verificar` judges two things separately — whether the answer is right, and
+whether they committed *that specific misconception* again. Those are independent on
+purpose. A right answer with the misconception visible in the steps does not count;
+a wrong answer from an arithmetic slip, with the targeted reasoning applied correctly,
+does. Only the second question decides whether the misconception is overcome.
+
+The teacher dashboard is scoped to a classroom and reads server-side. The browser
+cannot query the diagnoses table at all — the table has no client permissions.
+`/api/aula` identifies the caller from an Appwrite JWT, reads the classroom code from
+their own preferences, and queries with the server API key. A student cannot request
+another classroom's data because the classroom is never a client-supplied parameter.
+
 Still unfinished:
 
 - **The contact form does not send.** It validates and confirms, but there is no mail
   backend behind it yet.
-- **The practice loop does not close.** Targeted exercises are generated but there is
-  nowhere to submit an answer, so the app proves it can *detect* a misconception, not
-  that the student overcame it.
-- **The teacher dashboard has no auth and no per-classroom scoping.** The `aula`
-  column exists but is always `demo`.
 
 ### Required setup step
 

@@ -1,11 +1,145 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CabeceraPagina from "@/components/CabeceraPagina";
 import SelectorIdioma from "@/components/SelectorIdioma";
 import { useSesion } from "@/lib/sesion";
 import { useIdioma } from "@/lib/i18n/contexto";
+
+/**
+ * Aula y tipo de cuenta.
+ * El docente ve su código para repartirlo; el estudiante escribe el que le
+ * dieron. Las dos cosas viven en las preferencias de la cuenta de Appwrite.
+ */
+function SeccionAula({ sesion }) {
+  const { t } = useIdioma();
+  const { actualizarPerfil } = useSesion();
+  const p = t.paginas.perfil;
+
+  const esDocente = sesion.rol === "docente";
+  const [codigo, setCodigo] = useState(sesion.aula || "");
+  const [estado, setEstado] = useState("reposo");
+  const [copiado, setCopiado] = useState(false);
+
+  async function guardar(rol, aula) {
+    setEstado("guardando");
+    try {
+      await actualizarPerfil({ rol, aula });
+      setEstado("guardado");
+      setTimeout(() => setEstado("reposo"), 2000);
+    } catch {
+      setEstado("reposo");
+    }
+  }
+
+  function copiar() {
+    navigator.clipboard?.writeText(sesion.aula || "");
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  return (
+    <>
+      {/* Tipo de cuenta */}
+      <div
+        className="tarjeta animate-aparecer p-6 sm:p-8"
+        style={{ animationDelay: "60ms" }}
+      >
+        <h3 className="titulo text-xl font-semibold text-white">{p.rolTitulo}</h3>
+        <p className="mt-2 max-w-xl text-sm font-light leading-relaxed text-acero">
+          {p.rolTexto}
+        </p>
+
+        <div className="relative mt-5 grid max-w-sm grid-cols-2 gap-2 rounded-2xl border border-hielo bg-nube p-1.5">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-1.5 left-1.5 w-[calc(50%-0.75rem)] rounded-xl bg-papel shadow-suave transition-transform duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+            style={{
+              transform: `translateX(calc(${esDocente ? 1 : 0} * (100% + 0.5rem)))`,
+            }}
+          />
+          {["estudiante", "docente"].map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => guardar(r, r === "docente" ? null : codigo)}
+              aria-pressed={sesion.rol === r}
+              className={`relative z-10 rounded-xl px-3 py-2.5 text-sm transition-colors duration-300 ${
+                sesion.rol === r ? "font-medium text-tinta" : "text-acero"
+              }`}
+            >
+              {t.nav.roles[r]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Aula */}
+      <div
+        className="tarjeta animate-aparecer p-6 sm:p-8"
+        style={{ animationDelay: "120ms" }}
+      >
+        <h3 className="titulo text-xl font-semibold text-white">{p.aulaTitulo}</h3>
+        <p className="mt-2 max-w-xl text-sm font-light leading-relaxed text-acero">
+          {esDocente ? p.aulaDocenteTexto : p.aulaEstudianteTexto}
+        </p>
+
+        {esDocente ? (
+          <div className="mt-5 flex flex-wrap items-center gap-4">
+            <span
+              translate="no"
+              className="notranslate titulo text-3xl font-semibold tracking-[0.2em] text-ambar"
+            >
+              {sesion.aula}
+            </span>
+            <button
+              type="button"
+              onClick={copiar}
+              className="boton-secundario !px-5 !py-2 text-xs"
+            >
+              {copiado ? t.docente.copiado : t.docente.copiar}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-5 flex flex-wrap items-end gap-3">
+            <div className="min-w-[12rem] flex-1">
+              <label htmlFor="aula" className="etiqueta mb-2 block">
+                {p.aulaCampo}
+              </label>
+              <input
+                id="aula"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                maxLength={12}
+                placeholder="ABC123"
+                translate="no"
+                className="notranslate campo font-mono tracking-[0.2em]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => guardar("estudiante", codigo)}
+              disabled={estado === "guardando"}
+              className="boton-acento !px-6 !py-3 text-xs"
+            >
+              {estado === "guardando"
+                ? p.aulaGuardando
+                : estado === "guardado"
+                ? p.aulaGuardada
+                : p.aulaGuardar}
+            </button>
+          </div>
+        )}
+
+        {!esDocente && !sesion.aula && (
+          <p className="mt-3 text-xs text-acero/80">{p.sinAula}</p>
+        )}
+      </div>
+    </>
+  );
+}
 
 export default function Perfil() {
   const router = useRouter();
@@ -98,6 +232,9 @@ export default function Perfil() {
               </Link>
             )}
           </div>
+
+          {/* ---------- Aula y rol ---------- */}
+          {!sesion.invitado && <SeccionAula sesion={sesion} />}
 
           {/* ---------- Preferencias ---------- */}
           <div

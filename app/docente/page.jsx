@@ -1,82 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  clienteAppwrite,
-  BASE_DATOS,
-  TABLA_DIAGNOSTICOS,
-  Query,
-} from "@/lib/appwrite";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { buscarPorCodigo, textoMisconception } from "@/lib/misconceptions";
 import { useIdioma } from "@/lib/i18n/contexto";
+import { useSesion } from "@/lib/sesion";
+import { crearJWT } from "@/lib/cuenta";
 import ContadorAnimado from "@/components/ContadorAnimado";
 
-/** Datos de respaldo para la demo cuando Appwrite aún no está configurado. */
-const DATOS_DEMO = [
-  { misconception: "SIG-01", total: 14 },
-  { misconception: "SIG-02", total: 9 },
-  { misconception: "EQU-01", total: 6 },
-  { misconception: "FRA-01", total: 4 },
-  { misconception: "VAR-02", total: 3 },
-  { misconception: "EQU-02", total: 2 },
-  { misconception: "OTr-00", total: 2 },
-];
+/** Tarjeta centrada para los estados en los que no hay panel que mostrar. */
+function Bloqueo({ titulo, texto, acciones }) {
+  return (
+    <div className="tarjeta mt-12 animate-aparecer p-8 text-center sm:p-10">
+      <h2 className="titulo text-2xl font-semibold text-white">{titulo}</h2>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-acero">
+        {texto}
+      </p>
+      <div className="mt-7 flex flex-wrap justify-center gap-3">{acciones}</div>
+    </div>
+  );
+}
 
 export default function PanelDocente() {
   const { t, idioma } = useIdioma();
-  const [filas, setFilas] = useState(null);
-  const [origen, setOrigen] = useState("demo");
-  // Las barras arrancan en cero y crecen al aparecer los datos.
+  const { sesion, cargando: cargandoSesion } = useSesion();
+
+  const [datos, setDatos] = useState(null);
+  const [estado, setEstado] = useState("cargando"); // cargando | listo | error
   const [barrasListas, setBarrasListas] = useState(false);
+  const [copiado, setCopiado] = useState(false);
 
-  useEffect(() => {
-    async function cargar() {
-      const bd = clienteAppwrite();
-      if (!bd) {
-        setFilas(DATOS_DEMO);
-        return;
-      }
+  const esDocente = sesion && !sesion.invitado && sesion.rol === "docente";
 
-      let registros = [];
-      try {
-        // Appwrite lanza en caso de error en vez de devolverlo, así que
-        // va en try/catch: si falla, el panel cae a los datos de demo.
-        const res = await bd.listRows({
-          databaseId: BASE_DATOS,
-          tableId: TABLA_DIAGNOSTICOS,
-          queries: [Query.orderDesc("$createdAt"), Query.limit(500)],
-        });
-        registros = res.rows;
-      } catch (error) {
-        console.error("[docente] no se pudieron leer los diagnósticos:", error?.message || error);
-      }
-
-      if (registros.length === 0) {
-        setFilas(DATOS_DEMO);
-        return;
-      }
-      const conteo = {};
-      for (const r of registros) {
-        conteo[r.misconception] = (conteo[r.misconception] || 0) + 1;
-      }
-      const agregado = Object.entries(conteo)
-        .map(([misconception, total]) => ({ misconception, total }))
-        .sort((a, b) => b.total - a.total);
-      setFilas(agregado);
-      setOrigen("appwrite");
+  const cargar = useCallback(async () => {
+    setEstado("cargando");
+    try {
+      const jwt = await crearJWT();
+      const res = await fetch("/api/aula", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jwt }),
+      });
+      if (!res.ok) throw new Error("carga");
+      setDatos(await res.json());
+      setEstado("listo");
+    } catch {
+      setEstado("error");
     }
-    cargar();
   }, []);
 
   useEffect(() => {
-    if (!filas) return;
-    const t = setTimeout(() => setBarrasListas(true), 80);
-    return () => clearTimeout(t);
-  }, [filas]);
+    if (esDocente) cargar();
+  }, [esDocente, cargar]);
 
-  const totalGeneral = filas?.reduce((s, f) => s + f.total, 0) || 0;
-  const maximo = filas?.[0]?.total || 1;
-  const dominante = filas?.[0]
+  useEffect(() => {
+    if (estado !== "listo") return;
+    const reloj = setTimeout(() => setBarrasListas(true), 80);
+    return () => clearTimeout(reloj);
+  }, [estado]);
+
+  function copiar() {
+    navigator.clipboard?.writeText(datos.aula);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  const filas = datos?.filas || [];
+  const totalGeneral = datos?.total || 0;
+  const maximo = filas[0]?.total || 1;
+  const dominante = filas[0]
     ? textoMisconception(buscarPorCodigo(filas[0].misconception), idioma)
     : null;
 
@@ -92,97 +84,178 @@ export default function PanelDocente() {
         </p>
       </header>
 
-      {!filas ? (
-        <p className="mt-12 text-sm text-acero">{t.docente.cargando}</p>
-      ) : (
+      {/* ---------- Comprobando sesión ---------- */}
+      {cargandoSesion && (
+        <div className="mt-12 h-44 animate-pulse rounded-3xl bg-hielo/30" />
+      )}
+
+      {/* ---------- Sin sesión ---------- */}
+      {!cargandoSesion && (!sesion || sesion.invitado) && (
+        <Bloqueo
+          titulo={t.docente.entrarTitulo}
+          texto={t.docente.entrarTexto}
+          acciones={
+            <>
+              <Link href="/entrar" className="boton-acento">
+                {t.docente.entrarBoton}
+              </Link>
+              <Link href="/registro" className="boton-secundario">
+                {t.docente.registroBoton}
+              </Link>
+            </>
+          }
+        />
+      )}
+
+      {/* ---------- Con sesión, pero de estudiante ---------- */}
+      {!cargandoSesion && sesion && !sesion.invitado && !esDocente && (
+        <Bloqueo
+          titulo={t.docente.soloDocentesTitulo}
+          texto={t.docente.soloDocentesTexto}
+          acciones={
+            <Link href="/perfil" className="boton-acento">
+              {t.docente.irAlPerfil}
+            </Link>
+          }
+        />
+      )}
+
+      {/* ---------- Panel ---------- */}
+      {esDocente && (
         <>
-          {/* Resumen */}
-          <div className="mt-10 grid gap-4 sm:grid-cols-3">
-            <div className="tarjeta tarjeta-viva p-6">
-              <p className="etiqueta">{t.docente.registrados}</p>
-              <p className="titulo mt-2 text-5xl font-semibold text-white">
-                <ContadorAnimado valor={totalGeneral} />
-              </p>
-            </div>
-            <div className="tarjeta tarjeta-viva p-6 sm:col-span-2">
-              <p className="etiqueta">{t.docente.dominante}</p>
-              <p className="titulo mt-2 text-2xl font-semibold text-ambar">
-                {dominante ? dominante.nombre : "—"}
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-acero">
-                {dominante?.descripcion}
-              </p>
-            </div>
-          </div>
+          {estado === "cargando" && (
+            <p className="mt-12 text-sm text-acero">{t.docente.cargando}</p>
+          )}
 
-          {/* Mapa de calor */}
-          <section className="tarjeta mt-8 p-6 sm:p-8 shadow-tarjeta">
-            <div className="flex items-baseline justify-between gap-4">
-              <h2 className="titulo text-2xl font-semibold">
-                {t.docente.mapaTitulo}
-              </h2>
-              <span className="font-mono text-xs text-acero">
-                {origen === "appwrite" ? t.docente.envivo : t.docente.demo}
-              </span>
-            </div>
+          {estado === "error" && (
+            <p className="mt-12 text-sm text-ambar">{t.docente.errorCarga}</p>
+          )}
 
-            <div className="mt-7 space-y-5">
-              {filas.map((f, i) => {
-                const detalle = textoMisconception(
-                  buscarPorCodigo(f.misconception),
-                  idioma
-                );
-                const pct = Math.round((f.total / totalGeneral) * 100);
-                return (
-                  <div
-                    key={f.misconception}
-                    className="animate-aparecer"
-                    style={{ animationDelay: `${i * 90}ms` }}
+          {estado === "listo" && (
+            <>
+              {/* Código de aula */}
+              <div className="tarjeta mt-10 flex flex-wrap items-center justify-between gap-5 p-6">
+                <div>
+                  <p className="etiqueta">{t.docente.codigoEtiqueta}</p>
+                  <p
+                    translate="no"
+                    className="notranslate titulo mt-1.5 text-3xl font-semibold tracking-[0.2em] text-ambar"
                   >
-                    <div className="mb-1.5 flex items-baseline justify-between gap-4">
-                      <p className="text-sm text-tinta">
-                        <span
-                          translate="no"
-                          className="notranslate font-mono text-xs text-acero"
-                        >
-                          {f.misconception}
-                        </span>{" "}
-                        · {detalle ? detalle.nombre : t.docente.sinClasificar}
-                      </p>
-                      <p className="shrink-0 font-mono text-xs text-acero">
-                        {f.total} {t.docente.casos} · {pct}%
+                    {datos.aula}
+                  </p>
+                  <p className="mt-2 max-w-sm text-xs leading-relaxed text-acero">
+                    {t.docente.codigoTexto}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={copiar}
+                  className="boton-secundario !px-5 !py-2 text-xs"
+                >
+                  {copiado ? t.docente.copiado : t.docente.copiar}
+                </button>
+              </div>
+
+              {totalGeneral === 0 ? (
+                <Bloqueo
+                  titulo={t.docente.sinDatosTitulo}
+                  texto={t.docente.sinDatosTexto}
+                  acciones={
+                    <Link href="/analizar" className="boton-secundario">
+                      {t.nav.analizar}
+                    </Link>
+                  }
+                />
+              ) : (
+                <>
+                  {/* Resumen */}
+                  <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                    <div className="tarjeta tarjeta-viva p-6">
+                      <p className="etiqueta">{t.docente.registrados}</p>
+                      <p className="titulo mt-2 text-5xl font-semibold text-white">
+                        <ContadorAnimado valor={totalGeneral} />
                       </p>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-hielo/70">
-                      <div
-                        className="barra-calor"
-                        style={{
-                          width: barrasListas
-                            ? `${(f.total / maximo) * 100}%`
-                            : "0%",
-                          transitionDelay: `${i * 90}ms`,
-                        }}
-                      />
+                    <div className="tarjeta tarjeta-viva p-6 sm:col-span-2">
+                      <p className="etiqueta">{t.docente.dominante}</p>
+                      <p className="titulo mt-2 text-2xl font-semibold text-ambar">
+                        {dominante ? dominante.nombre : "—"}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-acero">
+                        {dominante?.descripcion}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </section>
 
-          {/* Sugerencia pedagógica */}
-          {dominante && (
-            <section className="seccion-abisal mt-8 rounded-3xl p-6 sm:p-8">
-              <p className="etiqueta-clara relative">{t.docente.sugerenciaEtiqueta}</p>
-              <p className="titulo relative mt-3 text-xl font-semibold leading-snug text-white">
-                {t.docente.sugerenciaTitulo1}
-                {dominante.nombre.toLowerCase()}
-                {t.docente.sugerenciaTitulo2}
-              </p>
-              <p className="relative mt-3 max-w-2xl text-sm font-light leading-relaxed text-bruma">
-                {t.docente.sugerenciaTexto}
-              </p>
-            </section>
+                  {/* Mapa de calor */}
+                  <section className="tarjeta mt-8 p-6 shadow-tarjeta sm:p-8">
+                    <h2 className="titulo text-2xl font-semibold text-white">
+                      {t.docente.mapaTitulo}
+                    </h2>
+
+                    <div className="mt-7 space-y-5">
+                      {filas.map((f, i) => {
+                        const detalle = textoMisconception(
+                          buscarPorCodigo(f.misconception),
+                          idioma
+                        );
+                        const pct = Math.round((f.total / totalGeneral) * 100);
+                        return (
+                          <div
+                            key={f.misconception}
+                            className="animate-aparecer"
+                            style={{ animationDelay: `${i * 90}ms` }}
+                          >
+                            <div className="mb-1.5 flex items-baseline justify-between gap-4">
+                              <p className="text-sm text-tinta">
+                                <span
+                                  translate="no"
+                                  className="notranslate font-mono text-xs text-acero"
+                                >
+                                  {f.misconception}
+                                </span>{" "}
+                                · {detalle ? detalle.nombre : t.docente.sinClasificar}
+                              </p>
+                              <p className="shrink-0 font-mono text-xs text-acero">
+                                {f.total} {t.docente.casos} · {pct}%
+                              </p>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-hielo/70">
+                              <div
+                                className="barra-calor"
+                                style={{
+                                  width: barrasListas
+                                    ? `${(f.total / maximo) * 100}%`
+                                    : "0%",
+                                  transitionDelay: `${i * 90}ms`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+
+                  {/* Sugerencia pedagógica */}
+                  {dominante && (
+                    <section className="seccion-abisal mt-8 rounded-3xl p-6 sm:p-8">
+                      <p className="etiqueta-clara relative">
+                        {t.docente.sugerenciaEtiqueta}
+                      </p>
+                      <p className="titulo relative mt-3 text-xl font-semibold leading-snug text-white">
+                        {t.docente.sugerenciaTitulo1}
+                        {dominante.nombre.toLowerCase()}
+                        {t.docente.sugerenciaTitulo2}
+                      </p>
+                      <p className="relative mt-3 max-w-2xl text-sm font-light leading-relaxed text-bruma">
+                        {t.docente.sugerenciaTexto}
+                      </p>
+                    </section>
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}

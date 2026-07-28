@@ -8,7 +8,7 @@ import {
   completarConEsquema,
 } from "@/lib/groq";
 import { catalogoParaPrompt, buscarPorCodigo, CODIGOS } from "@/lib/misconceptions";
-import { registrarDiagnostico } from "@/lib/appwrite-servidor";
+import { registrarDiagnostico, usuarioDesdeJWT } from "@/lib/appwrite-servidor";
 
 export const maxDuration = 60;
 
@@ -135,7 +135,7 @@ neither the rule nor the corrected step appears anywhere in your answer.`;
 
 export async function POST(peticion) {
   try {
-    const { texto, imagenBase64, tipoImagen, idioma } = await peticion.json();
+    const { texto, imagenBase64, tipoImagen, idioma, jwt } = await peticion.json();
 
     if (!texto && !imagenBase64) {
       return NextResponse.json(
@@ -202,8 +202,16 @@ export async function POST(peticion) {
     // Registro anónimo para el panel docente. registrarDiagnostico() nunca
     // lanza, así que un fallo de la base de datos no puede tumbar un
     // diagnóstico que ya salió bien.
+    //
+    // El aula NO se toma de lo que manda el cliente: se deriva del usuario
+    // verificado por JWT. Si no hay sesión, el diagnóstico se guarda sin
+    // aula y no aparecerá en el panel de ningún docente.
     if (!diagnostico.procedimiento_correcto) {
-      await registrarDiagnostico(diagnostico);
+      const usuario = await usuarioDesdeJWT(jwt);
+      await registrarDiagnostico({
+        ...diagnostico,
+        aula: usuario?.prefs?.aula || null,
+      });
     }
 
     return NextResponse.json(diagnostico);

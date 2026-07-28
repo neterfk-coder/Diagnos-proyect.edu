@@ -6,6 +6,8 @@ import {
   iniciarSesion,
   crearCuenta,
   cerrarSesionRemota,
+  guardarAula,
+  aulaDeUsuario,
   hayCuentas,
 } from "@/lib/cuenta";
 
@@ -32,6 +34,7 @@ function desdeUsuario(u) {
     nombre: u.name || (u.email ? u.email.split("@")[0] : "—"),
     correo: u.email || null,
     rol: u.prefs?.rol === "docente" ? "docente" : "estudiante",
+    aula: aulaDeUsuario(u),
     invitado: false,
   };
 }
@@ -91,6 +94,14 @@ export function ProveedorSesion({ children }) {
     setSesion(SESION_INVITADO);
   }, []);
 
+  /** Cambia rol y/o aula y refresca la sesión con lo que confirme el servidor. */
+  const actualizarPerfil = useCallback(async ({ rol, aula }) => {
+    await guardarAula(aula, rol);
+    const usuario = await usuarioActual();
+    if (usuario) setSesion(desdeUsuario(usuario));
+    return usuario;
+  }, []);
+
   const salir = useCallback(async () => {
     escribirMarcaInvitado(false);
     await cerrarSesionRemota();
@@ -106,6 +117,7 @@ export function ProveedorSesion({ children }) {
         entrar,
         registrar,
         entrarComoInvitado,
+        actualizarPerfil,
         salir,
         refrescar,
       }}

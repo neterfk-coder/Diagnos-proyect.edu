@@ -9,12 +9,15 @@ import BotonEnvio from "@/components/acceso/BotonEnvio";
 import BotonInvitado from "@/components/acceso/BotonInvitado";
 import Casilla from "@/components/acceso/Casilla";
 import FuerzaClave, { evaluarClave } from "@/components/acceso/FuerzaClave";
-import { guardarSesion } from "@/lib/sesion";
+import AvisoAcceso from "@/components/acceso/AvisoAcceso";
+import { useSesion } from "@/lib/sesion";
+import { claveDeError } from "@/lib/cuenta";
 import { useIdioma } from "@/lib/i18n/contexto";
 
 export default function Registro() {
   const router = useRouter();
   const { t } = useIdioma();
+  const { registrar, hayCuentas } = useSesion();
   const ROLES = t.acceso.roles;
 
   const [rol, setRol] = useState("estudiante");
@@ -23,6 +26,7 @@ export default function Registro() {
   const [clave, setClave] = useState("");
   const [acepta, setAcepta] = useState(false);
   const [errores, setErrores] = useState({});
+  const [aviso, setAviso] = useState(null);
   const [estado, setEstado] = useState("reposo");
 
   function validar() {
@@ -40,16 +44,23 @@ export default function Registro() {
 
   async function enviar(evento) {
     evento.preventDefault();
+    setAviso(null);
+
     const e = validar();
     setErrores(e);
     if (Object.keys(e).length > 0) return;
 
+    if (!hayCuentas) return setAviso(t.acceso.errores.sinCuentas);
+
     setEstado("cargando");
-    // Sin base de datos todavía: simulamos la latencia de la petición real.
-    await new Promise((r) => setTimeout(r, 1500));
-    guardarSesion({ nombre: nombre.trim(), correo, rol, invitado: false });
-    setEstado("listo");
-    setTimeout(() => router.push(rol === "docente" ? "/docente" : "/analizar"), 850);
+    try {
+      await registrar({ nombre: nombre.trim(), correo: correo.trim(), clave, rol });
+      setEstado("listo");
+      setTimeout(() => router.push(rol === "docente" ? "/docente" : "/analizar"), 700);
+    } catch (error) {
+      setEstado("reposo");
+      setAviso(t.acceso.errores[claveDeError(error)] || t.acceso.errores.generico);
+    }
   }
 
   const indiceRol = ROLES.findIndex((r) => r.id === rol);
@@ -57,14 +68,14 @@ export default function Registro() {
   return (
     <div className="animate-aparecer">
       <Link href="/" className="mb-9 inline-flex items-baseline gap-2 lg:hidden">
-        <span className="titulo text-2xl font-semibold text-tinta">Diagnos</span>
+        <span className="titulo text-2xl font-semibold text-white">Diagnos</span>
         <span className="etiqueta">{t.nav.lema}</span>
       </Link>
 
       <CambioAcceso />
 
       <header className="mt-8">
-        <h1 className="titulo text-4xl font-semibold leading-tight text-tinta">
+        <h1 className="titulo text-4xl font-semibold leading-tight text-white">
           {t.acceso.registroTitulo}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-acero">
@@ -171,6 +182,8 @@ export default function Registro() {
             </p>
           )}
         </div>
+
+        <AvisoAcceso mensaje={aviso} />
 
         <div className="animate-aparecer" style={{ animationDelay: "360ms" }}>
           <BotonEnvio

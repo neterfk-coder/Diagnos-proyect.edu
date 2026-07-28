@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { leerSesion, cerrarSesion } from "@/lib/sesion";
+import { useSesion } from "@/lib/sesion";
 import { useIdioma } from "@/lib/i18n/contexto";
 import SelectorIdioma from "@/components/SelectorIdioma";
 
@@ -19,25 +19,17 @@ export default function Nav() {
     { href: "/tutor", texto: t.nav.tutor },
     { href: "/docente", texto: t.nav.docente },
   ];
-  const [sesion, setSesion] = useState(null);
+  const { sesion, cargando, salir: cerrarSesion } = useSesion();
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  useEffect(() => {
-    const sincronizar = () => setSesion(leerSesion());
-    sincronizar();
-    window.addEventListener("diagnos:sesion", sincronizar);
-    window.addEventListener("storage", sincronizar);
-    return () => {
-      window.removeEventListener("diagnos:sesion", sincronizar);
-      window.removeEventListener("storage", sincronizar);
-    };
-  }, [ruta]);
+  // El menú se cierra al navegar; si no, queda abierto sobre la página nueva
+  useEffect(() => setMenuAbierto(false), [ruta]);
 
   if (RUTAS_ACCESO.includes(ruta)) return null;
 
-  function salir() {
-    cerrarSesion();
+  async function salir() {
     setMenuAbierto(false);
+    await cerrarSesion();
     router.push("/");
   }
 
@@ -74,7 +66,14 @@ export default function Nav() {
 
           <span className="mx-1 hidden h-5 w-px bg-hielo sm:block" />
 
-          {sesion ? (
+          {cargando ? (
+            // Espacio reservado mientras se comprueba la sesión: evita que el
+            // botón "Entrar" parpadee antes de saber si hay usuario.
+            <span
+              aria-hidden="true"
+              className="h-8 w-20 animate-pulse rounded-full bg-hielo/50"
+            />
+          ) : sesion ? (
             <div className="relative">
               <button
                 type="button"
@@ -120,13 +119,21 @@ export default function Nav() {
                         {sesion.invitado ? t.nav.sinHistorial : sesion.correo}
                       </p>
                     </div>
-                    {sesion.invitado && (
+                    {sesion.invitado ? (
                       <Link
                         href="/registro"
                         onClick={() => setMenuAbierto(false)}
                         className="block px-4 py-3 text-sm text-cobalto transition-colors hover:bg-nube"
                       >
                         {t.nav.crearCuenta}
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/perfil"
+                        onClick={() => setMenuAbierto(false)}
+                        className="block px-4 py-3 text-sm text-tinta transition-colors hover:bg-nube"
+                      >
+                        {t.paginas.perfil.etiqueta}
                       </Link>
                     )}
                     <button

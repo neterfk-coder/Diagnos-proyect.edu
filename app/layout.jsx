@@ -3,6 +3,7 @@ import Nav from "@/components/Nav";
 import Pie from "@/components/Pie";
 import FondoAnimado from "@/components/FondoAnimado";
 import { ProveedorIdioma } from "@/lib/i18n/contexto";
+import { ProveedorSesion } from "@/lib/sesion";
 
 export const metadata = {
   title: "Diagnos — Fix your reasoning, not just your answer",
@@ -24,10 +25,12 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <ProveedorIdioma>
-          <FondoAnimado />
-          <Nav />
-          <main className="min-h-screen">{children}</main>
-          <Pie />
+          <ProveedorSesion>
+            <FondoAnimado />
+            <Nav />
+            <main className="min-h-screen">{children}</main>
+            <Pie />
+          </ProveedorSesion>
         </ProveedorIdioma>
       </body>
     </html>

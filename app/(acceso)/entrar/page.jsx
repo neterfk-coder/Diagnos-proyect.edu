@@ -7,17 +7,20 @@ import CambioAcceso from "@/components/acceso/CambioAcceso";
 import CampoFlotante from "@/components/acceso/CampoFlotante";
 import BotonEnvio from "@/components/acceso/BotonEnvio";
 import BotonInvitado from "@/components/acceso/BotonInvitado";
-import Casilla from "@/components/acceso/Casilla";
-import { guardarSesion } from "@/lib/sesion";
+import AvisoAcceso from "@/components/acceso/AvisoAcceso";
+import { useSesion } from "@/lib/sesion";
+import { claveDeError } from "@/lib/cuenta";
 import { useIdioma } from "@/lib/i18n/contexto";
 
 export default function Entrar() {
   const router = useRouter();
   const { t } = useIdioma();
+  const { entrar, hayCuentas } = useSesion();
+
   const [correo, setCorreo] = useState("");
   const [clave, setClave] = useState("");
-  const [recordar, setRecordar] = useState(true);
   const [errores, setErrores] = useState({});
+  const [aviso, setAviso] = useState(null);
   const [estado, setEstado] = useState("reposo");
 
   function validar() {
@@ -31,35 +34,38 @@ export default function Entrar() {
 
   async function enviar(evento) {
     evento.preventDefault();
+    setAviso(null);
+
     const e = validar();
     setErrores(e);
     if (Object.keys(e).length > 0) return;
 
+    if (!hayCuentas) return setAviso(t.acceso.errores.sinCuentas);
+
     setEstado("cargando");
-    // Sin base de datos todavía: simulamos la latencia de la petición real.
-    await new Promise((r) => setTimeout(r, 1300));
-    guardarSesion({
-      nombre: correo.split("@")[0],
-      correo,
-      rol: "estudiante",
-      invitado: false,
-    });
-    setEstado("listo");
-    setTimeout(() => router.push("/analizar"), 850);
+    try {
+      const usuario = await entrar(correo.trim(), clave);
+      setEstado("listo");
+      const destino = usuario?.prefs?.rol === "docente" ? "/docente" : "/analizar";
+      setTimeout(() => router.push(destino), 700);
+    } catch (error) {
+      setEstado("reposo");
+      setAviso(t.acceso.errores[claveDeError(error)] || t.acceso.errores.generico);
+    }
   }
 
   return (
     <div className="animate-aparecer">
       {/* Marca, solo en móvil (en escritorio ya está en el panel izquierdo) */}
       <Link href="/" className="mb-9 inline-flex items-baseline gap-2 lg:hidden">
-        <span className="titulo text-2xl font-semibold text-tinta">Diagnos</span>
+        <span className="titulo text-2xl font-semibold text-white">Diagnos</span>
         <span className="etiqueta">{t.nav.lema}</span>
       </Link>
 
       <CambioAcceso />
 
       <header className="mt-8">
-        <h1 className="titulo text-4xl font-semibold leading-tight text-tinta">
+        <h1 className="titulo text-4xl font-semibold leading-tight text-white">
           {t.acceso.entrarTitulo}
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-acero">
@@ -97,19 +103,18 @@ export default function Entrar() {
         />
 
         <div
-          className="mb-6 flex animate-aparecer items-center justify-between gap-4"
+          className="mb-6 flex animate-aparecer justify-end"
           style={{ animationDelay: "220ms" }}
         >
-          <Casilla id="recordar" marcada={recordar} onChange={setRecordar}>
-            {t.acceso.recordar}
-          </Casilla>
           <Link
             href="/recuperar"
-            className="shrink-0 text-sm text-cobalto hover:underline hover:underline-offset-4"
+            className="text-sm text-cobalto transition-colors hover:text-celeste hover:underline hover:underline-offset-4"
           >
             {t.acceso.olvidaste}
           </Link>
         </div>
+
+        <AvisoAcceso mensaje={aviso} />
 
         <div className="animate-aparecer" style={{ animationDelay: "300ms" }}>
           <BotonEnvio
@@ -145,7 +150,7 @@ export default function Entrar() {
         {t.acceso.sinCuenta}{" "}
         <Link
           href="/registro"
-          className="font-medium text-cobalto hover:underline hover:underline-offset-4"
+          className="font-medium text-cobalto transition-colors hover:text-celeste hover:underline hover:underline-offset-4"
         >
           {t.acceso.creaUna}
         </Link>

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CabeceraPagina from "@/components/CabeceraPagina";
 import SelectorIdioma from "@/components/SelectorIdioma";
-import { leerSesion, cerrarSesion } from "@/lib/sesion";
+import { useSesion } from "@/lib/sesion";
 import { useIdioma } from "@/lib/i18n/contexto";
 
 export default function Perfil() {
@@ -13,17 +12,11 @@ export default function Perfil() {
   const { t } = useIdioma();
   const p = t.paginas.perfil;
 
-  const [sesion, setSesion] = useState(null);
-  const [cargado, setCargado] = useState(false);
+  const { sesion, cargando, salir: cerrarSesion } = useSesion();
+  const cargado = !cargando;
 
-  useEffect(() => {
-    setSesion(leerSesion());
-    setCargado(true);
-  }, []);
-
-  function salir() {
-    cerrarSesion();
-    setSesion(null);
+  async function salir() {
+    await cerrarSesion();
     router.push("/");
   }
 
@@ -131,8 +124,6 @@ export default function Perfil() {
               {sesion.invitado ? t.nav.salirInvitado : p.salir}
             </button>
           </div>
-
-          <p className="px-1 text-xs leading-relaxed text-acero/80">{p.aviso}</p>
         </div>
       )}
     </div>

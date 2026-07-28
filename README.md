@@ -140,13 +140,28 @@ cannot corrupt it.
 
 ## Status
 
-This is a hackathon prototype. Two things are deliberately unfinished:
+This is a hackathon prototype.
 
-- **Accounts are not connected to a database.** The sign-in, sign-up and recovery
-  screens are complete UI with validation, but the session lives in `localStorage`
-  (`lib/sesion.js`). Swapping in Appwrite's `account` API is the next step.
+Working against live backends: diagnosis (typed and from a photo), the Socratic
+dialogue, targeted practice, the PDF study tutor, the teacher dashboard, and
+**accounts** — sign-up, sign-in, roles, password recovery by email and sign-out, all
+on Appwrite Auth (`lib/cuenta.js`, `lib/sesion.jsx`). Guest mode stays local so the
+project does not accumulate an anonymous user per visit.
+
+Still unfinished:
+
 - **The contact form does not send.** It validates and confirms, but there is no mail
   backend behind it yet.
+- **The practice loop does not close.** Targeted exercises are generated but there is
+  nowhere to submit an answer, so the app proves it can *detect* a misconception, not
+  that the student overcame it.
+- **The teacher dashboard has no auth and no per-classroom scoping.** The `aula`
+  column exists but is always `demo`.
 
-Diagnoses, the Socratic dialogue, targeted practice and the PDF study tutor are fully
-functional against the live Groq API.
+### Required setup step
+
+Appwrite rejects browser requests from unregistered origins. Every domain that serves
+the app — `localhost` is allowed by default, your production domain is not — must be
+added in the Appwrite console under **Overview → Platforms → Add platform → Web**.
+Without it the teacher dashboard silently falls back to demonstration data and every
+account screen fails with `general_unknown_origin`.

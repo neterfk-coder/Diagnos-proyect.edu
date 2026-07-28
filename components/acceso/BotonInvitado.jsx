@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { entrarComoInvitado } from "@/lib/sesion";
+import { useSesion } from "@/lib/sesion";
 import { useIdioma } from "@/lib/i18n/contexto";
 
 /** Acceso sin cuenta: entra directo a /analizar. */
 export default function BotonInvitado() {
   const router = useRouter();
   const { t } = useIdioma();
+  const { entrarComoInvitado } = useSesion();
   const [entrando, setEntrando] = useState(false);
 
   function entrar() {

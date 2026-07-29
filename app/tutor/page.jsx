@@ -7,9 +7,11 @@ import ZonaPdf from "@/components/tutor/ZonaPdf";
 import Pestanas from "@/components/tutor/Pestanas";
 import Flashcard from "@/components/tutor/Flashcard";
 import { useIdioma } from "@/lib/i18n/contexto";
+import { useProgreso } from "@/lib/progreso";
 
 export default function Tutor() {
   const { t, idioma } = useIdioma();
+  const { sumar } = useProgreso();
   const [material, setMaterial] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
@@ -54,6 +56,7 @@ export default function Tutor() {
         return;
       }
       setMaterial(json);
+      sumar("materialEstudio");
       setPestana(0);
       setCarta(0);
       setPistas({});

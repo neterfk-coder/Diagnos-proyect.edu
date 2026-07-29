@@ -114,6 +114,38 @@ module.exports = {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
         },
+        // --- Sistema de recompensas ---
+        temblarCofre: {
+          "0%, 100%": { transform: "rotate(0deg) scale(1)" },
+          "15%": { transform: "rotate(-9deg) scale(1.04)" },
+          "30%": { transform: "rotate(8deg) scale(1.04)" },
+          "45%": { transform: "rotate(-7deg) scale(1.06)" },
+          "60%": { transform: "rotate(6deg) scale(1.06)" },
+          "75%": { transform: "rotate(-4deg) scale(1.08)" },
+        },
+        estallar: {
+          from: { opacity: "1", transform: "translate(0,0) scale(1)" },
+          to: { opacity: "0", transform: "translate(var(--dx), var(--dy)) scale(0.2)" },
+        },
+        revelarPremio: {
+          "0%": { opacity: "0", transform: "scale(0.3) rotate(-25deg)" },
+          "60%": { opacity: "1", transform: "scale(1.18) rotate(6deg)" },
+          "100%": { opacity: "1", transform: "scale(1) rotate(0deg)" },
+        },
+        subirGanancia: {
+          "0%": { opacity: "0", transform: "translateY(6px) scale(0.9)" },
+          "20%": { opacity: "1", transform: "translateY(0) scale(1)" },
+          "80%": { opacity: "1", transform: "translateY(-6px) scale(1)" },
+          "100%": { opacity: "0", transform: "translateY(-14px) scale(0.95)" },
+        },
+        latidoCofre: {
+          "0%, 100%": { transform: "scale(1)", filter: "brightness(1)" },
+          "50%": { transform: "scale(1.12)", filter: "brightness(1.35)" },
+        },
+        barrido: {
+          from: { transform: "translateX(-120%)" },
+          to: { transform: "translateX(320%)" },
+        },
         derivar: {
           "0%, 100%": { transform: "translate3d(0,0,0) scale(1)" },
           "25%": { transform: "translate3d(4%, -6%, 0) scale(1.08)" },
@@ -150,6 +182,12 @@ module.exports = {
         revelar: "revelar 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
         "gradiente-vivo": "gradienteVivo 9s ease-in-out infinite",
         derivar: "derivar 26s ease-in-out infinite",
+        "temblar-cofre": "temblarCofre 0.6s ease-in-out 2",
+        estallar: "estallar 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "revelar-premio": "revelarPremio 0.75s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "subir-ganancia": "subirGanancia 2.6s ease-out both",
+        "latido-cofre": "latidoCofre 1.6s ease-in-out infinite",
+        barrido: "barrido 2.2s ease-in-out infinite",
         "flotar-glifo": "flotarGlifo 16s linear infinite",
         orbitar: "orbitar 14s linear infinite",
         respirar: "respirar 6s ease-in-out infinite",

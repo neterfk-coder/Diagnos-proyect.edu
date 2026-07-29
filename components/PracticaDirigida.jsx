@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useIdioma } from "@/lib/i18n/contexto";
+import { useProgreso } from "@/lib/progreso";
 import { textoMisconception } from "@/lib/misconceptions";
 
 /** Un ejercicio con su caja de respuesta y su veredicto. */
@@ -172,6 +173,7 @@ function Ejercicio({ ejercicio, indice, diagnostico, onResultado }) {
 
 export default function PracticaDirigida({ diagnostico }) {
   const { t, idioma } = useIdioma();
+  const { sumar } = useProgreso();
   const [ejercicios, setEjercicios] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
@@ -203,7 +205,17 @@ export default function PracticaDirigida({ diagnostico }) {
   }
 
   function anotar(indice, ok) {
-    setSuperados((s) => ({ ...s, [indice]: ok }));
+    setSuperados((s) => {
+      // Solo puntúa la primera vez que se supera cada ejercicio: reintentar
+      // no debe servir para farmear puntos.
+      if (ok && !s[indice]) {
+        sumar("ejercicioSuperado");
+        const totalTrasEste = Object.values({ ...s, [indice]: true }).filter(Boolean)
+          .length;
+        if (totalTrasEste === (ejercicios?.length || 0)) sumar("bucleCerrado");
+      }
+      return { ...s, [indice]: ok };
+    });
   }
 
   return (

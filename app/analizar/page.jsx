@@ -8,9 +8,11 @@ import PracticaDirigida from "@/components/PracticaDirigida";
 import { useIdioma } from "@/lib/i18n/contexto";
 import { textoMisconception } from "@/lib/misconceptions";
 import { crearJWT } from "@/lib/cuenta";
+import { useProgreso } from "@/lib/progreso";
 
 export default function Analizar() {
   const { t, idioma } = useIdioma();
+  const { sumar } = useProgreso();
   const [diagnostico, setDiagnostico] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
@@ -37,6 +39,7 @@ export default function Analizar() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setDiagnostico(json);
+      sumar("diagnostico");
     } catch (e) {
       setError(
         e.name === "AbortError" ? t.analizar.errorLento : e.message || t.analizar.errorGenerico

@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useIdioma } from "@/lib/i18n/contexto";
+import { useProgreso } from "@/lib/progreso";
 
 export default function ChatSocratico({ diagnostico, onDescubierto }) {
   const { t, idioma } = useIdioma();
+  const { sumar } = useProgreso();
   const [historial, setHistorial] = useState([
     { rol: "tutor", texto: diagnostico.pregunta_inicial },
   ]);
@@ -38,6 +40,7 @@ export default function ChatSocratico({ diagnostico, onDescubierto }) {
       setHistorial((h) => [...h, { rol: "tutor", texto: datos.texto }]);
       if (datos.descubierto) {
         setDescubierto(true);
+        sumar("descubrimiento");
         onDescubierto?.();
       }
     } catch {

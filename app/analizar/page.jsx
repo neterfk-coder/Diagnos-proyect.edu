@@ -16,6 +16,10 @@ export default function Analizar() {
   const [diagnostico, setDiagnostico] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
+  // Identifica cada diagnóstico. Sirve de key para que el diálogo y la
+  // práctica se monten de cero: sin esto React reutiliza las instancias y
+  // el segundo ejercicio hereda la conversación y los ejercicios del primero.
+  const [ronda, setRonda] = useState(0);
 
   async function analizar(datos) {
     setCargando(true);
@@ -39,6 +43,7 @@ export default function Analizar() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       setDiagnostico(json);
+      setRonda((r) => r + 1);
       sumar("diagnostico");
     } catch (e) {
       setError(
@@ -121,9 +126,9 @@ export default function Analizar() {
           {diagnostico && !diagnostico.procedimiento_correcto ? (
             <>
               <div className="min-h-[480px]">
-                <ChatSocratico diagnostico={diagnostico} />
+                <ChatSocratico key={`chat-${ronda}`} diagnostico={diagnostico} />
               </div>
-              <PracticaDirigida diagnostico={diagnostico} />
+              <PracticaDirigida key={`practica-${ronda}`} diagnostico={diagnostico} />
             </>
           ) : (
             <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-hielo p-10 text-center">

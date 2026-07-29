@@ -240,7 +240,9 @@ export default function Tutor() {
 
             {/* ---------- Cuestionario ---------- */}
             {activa === "quiz" && material.quiz?.length > 0 && (
-              <Quiz preguntas={material.quiz} />
+              // La key evita que las respuestas de un documento anterior
+              // sigan marcadas al generar material nuevo.
+              <Quiz key={material.titulo} preguntas={material.quiz} />
             )}
 
             {/* ---------- Puntos clave ---------- */}

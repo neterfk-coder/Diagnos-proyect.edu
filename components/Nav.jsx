@@ -24,9 +24,13 @@ export default function Nav() {
   ];
   const { sesion, cargando, salir: cerrarSesion } = useSesion();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [menuMovil, setMenuMovil] = useState(false);
 
   // El menú se cierra al navegar; si no, queda abierto sobre la página nueva
-  useEffect(() => setMenuAbierto(false), [ruta]);
+  useEffect(() => {
+    setMenuAbierto(false);
+    setMenuMovil(false);
+  }, [ruta]);
 
   if (RUTAS_ACCESO.includes(ruta)) return null;
 
@@ -49,19 +53,80 @@ export default function Nav() {
         </Link>
 
         <nav className="flex items-center gap-1 sm:gap-2">
-          {enlaces.map((e) => (
-            <Link
-              key={e.href}
-              href={e.href}
-              className={`rounded-full px-4 py-2 text-sm transition-colors ${
-                ruta === e.href
-                  ? "bg-ambar/15 font-medium text-ambar"
-                  : "text-acero hover:text-tinta"
-              }`}
+          {/* En móvil los enlaces se pliegan en un menú: cuatro etiquetas de
+              texto más los tres indicadores no caben en 375 px y desbordaban
+              la barra. */}
+          <div className="hidden items-center gap-1 lg:flex">
+            {enlaces.map((e) => (
+              <Link
+                key={e.href}
+                href={e.href}
+                className={`rounded-full px-4 py-2 text-sm transition-colors ${
+                  ruta === e.href
+                    ? "bg-ambar/15 font-medium text-ambar"
+                    : "text-acero hover:text-tinta"
+                }`}
+              >
+                {e.texto}
+              </Link>
+            ))}
+          </div>
+
+          <div className="relative lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMenuMovil((m) => !m)}
+              aria-expanded={menuMovil}
+              aria-label={t.nav.menu}
+              className="grid h-9 w-9 place-items-center rounded-full border border-hielo bg-nube text-acero transition-colors hover:border-cobalto/60 hover:text-tinta"
             >
-              {e.texto}
-            </Link>
-          ))}
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                {menuMovil ? (
+                  <path d="M18 6 6 18M6 6l12 12" />
+                ) : (
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                )}
+              </svg>
+            </button>
+
+            {menuMovil && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Cerrar"
+                  onClick={() => setMenuMovil(false)}
+                  className="fixed inset-0 z-10 cursor-default"
+                />
+                <div className="tarjeta absolute left-0 z-20 mt-2 w-56 animate-aparecer overflow-hidden !shadow-tarjeta">
+                  {enlaces.map((e) => (
+                    <Link
+                      key={e.href}
+                      href={e.href}
+                      onClick={() => setMenuMovil(false)}
+                      className={`block px-4 py-3 text-sm transition-colors hover:bg-nube ${
+                        ruta === e.href ? "font-medium text-ambar" : "text-tinta"
+                      }`}
+                    >
+                      {e.texto}
+                    </Link>
+                  ))}
+                  <div className="flex items-center justify-between gap-3 border-t border-hielo px-4 py-3">
+                    <span className="etiqueta">{t.nav.idioma}</span>
+                    <SelectorIdioma />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
           <span className="mx-1 hidden h-5 w-px bg-hielo sm:block" />
 
@@ -69,9 +134,11 @@ export default function Nav() {
 
           <BarraProgreso />
 
-          <span className="mx-1 hidden h-5 w-px bg-hielo sm:block" />
+          <span className="mx-1 hidden h-5 w-px bg-hielo lg:block" />
 
-          <SelectorIdioma />
+          <div className="hidden lg:block">
+            <SelectorIdioma />
+          </div>
 
           <span className="mx-1 hidden h-5 w-px bg-hielo sm:block" />
 

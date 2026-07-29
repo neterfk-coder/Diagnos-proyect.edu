@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 /** Experiencia necesaria para llenar la barra y desbloquear un cofre. */
 export const META = 100;
@@ -156,11 +163,16 @@ export function ProveedorProgreso({ children }) {
   const [ganancia, setGanancia] = useState(null);
   const [celebracion, setCelebracion] = useState(null);
   const [dia, setDia] = useState(hoyISO());
+  // Último día ya celebrado. Se siembra con lo que había guardado para que
+  // abrir la página con la racha de hoy hecha no dispare la celebración.
+  const diaCelebrado = useRef(null);
 
   // Se arranca en cero para que el HTML del servidor y el del cliente
   // coincidan; lo guardado se aplica ya hidratado.
   useEffect(() => {
-    setDatos(leer());
+    const guardado = leer();
+    diaCelebrado.current = guardado.ultimoDia;
+    setDatos(guardado);
     setMontado(true);
   }, []);
 
@@ -189,13 +201,14 @@ export function ProveedorProgreso({ children }) {
     if (!cantidad) return;
 
     const ahora = hoyISO();
-    let subioRacha = null;
 
+    // El actualizador se mantiene puro: React puede ejecutarlo más de una
+    // vez, así que decidir aquí dentro si celebrar disparaba la celebración
+    // por duplicado. Lo que hay que celebrar se deduce después comparando.
     setDatos((d) => {
       const xp = d.xp + cantidad;
       const nuevosCofres = Math.floor(xp / META);
 
-      // --- Racha ---
       let { racha, mejorRacha, ultimoDia, dias } = d;
       if (ultimoDia !== ahora) {
         const hueco = ultimoDia ? diasEntre(ultimoDia, ahora) : Infinity;
@@ -203,7 +216,6 @@ export function ProveedorProgreso({ children }) {
         ultimoDia = ahora;
         dias = [...dias, ahora].slice(-40);
         mejorRacha = Math.max(mejorRacha, racha);
-        subioRacha = racha;
       }
 
       return {
@@ -219,21 +231,31 @@ export function ProveedorProgreso({ children }) {
     });
 
     setGanancia({ motivo, cantidad, sello: Date.now() });
-    setTimeout(() => setGanancia(null), 2600);
-
-    // La celebración va después del render para que el número ya esté puesto
-    if (subioRacha !== null) {
-      setTimeout(
-        () =>
-          setCelebracion({
-            dias: subioRacha,
-            hito: HITOS.includes(subioRacha),
-            sello: Date.now(),
-          }),
-        700
-      );
-    }
   }, []);
+
+  // El aviso flotante se retira solo. Un temporizador por aviso hacía que
+  // el de una ganancia anterior borrase el de la siguiente antes de tiempo.
+  useEffect(() => {
+    if (!ganancia) return;
+    const reloj = setTimeout(() => setGanancia(null), 2600);
+    return () => clearTimeout(reloj);
+  }, [ganancia]);
+
+  // La celebración se dispara al detectar que el día cambió de verdad en el
+  // estado ya aplicado, no dentro del actualizador.
+  useEffect(() => {
+    if (!montado || !datos.ultimoDia) return;
+    if (datos.ultimoDia !== hoyISO()) return;
+    setCelebracion((previa) => {
+      if (previa || diaCelebrado.current === datos.ultimoDia) return previa;
+      diaCelebrado.current = datos.ultimoDia;
+      return {
+        dias: datos.racha,
+        hito: HITOS.includes(datos.racha),
+        sello: Date.now(),
+      };
+    });
+  }, [montado, datos.ultimoDia, datos.racha]);
 
   /** Abre un cofre y devuelve la pegatina que toca. */
   const abrirCofre = useCallback(() => {

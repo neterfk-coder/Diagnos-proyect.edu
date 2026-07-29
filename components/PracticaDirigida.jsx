@@ -205,17 +205,18 @@ export default function PracticaDirigida({ diagnostico }) {
   }
 
   function anotar(indice, ok) {
-    setSuperados((s) => {
-      // Solo puntúa la primera vez que se supera cada ejercicio: reintentar
-      // no debe servir para farmear puntos.
-      if (ok && !s[indice]) {
-        sumar("ejercicioSuperado");
-        const totalTrasEste = Object.values({ ...s, [indice]: true }).filter(Boolean)
-          .length;
-        if (totalTrasEste === (ejercicios?.length || 0)) sumar("bucleCerrado");
-      }
-      return { ...s, [indice]: ok };
-    });
+    // Los puntos se calculan FUERA del actualizador: React puede ejecutar un
+    // actualizador más de una vez, y con sumar() dentro se contaban dobles.
+    // Solo puntúa la primera vez que se supera cada ejercicio, así que
+    // reintentar no sirve para farmear.
+    const esNuevo = ok && !superados[indice];
+    if (esNuevo) {
+      sumar("ejercicioSuperado");
+      const trasEste = { ...superados, [indice]: true };
+      const cuantos = Object.values(trasEste).filter(Boolean).length;
+      if (cuantos === (ejercicios?.length || 0)) sumar("bucleCerrado");
+    }
+    setSuperados((s) => ({ ...s, [indice]: ok }));
   }
 
   return (

@@ -30,16 +30,24 @@ export default function Tutor() {
     return () => clearInterval(reloj);
   }, [cargando, t.tutor.fases.length]);
 
-  async function generar(datos) {
+  async function generar({ texto, paginas, caracteres, binario }) {
     setCargando(true);
     setError(null);
     setMaterial(null);
     try {
-      const res = await fetch("/api/tutor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...datos, idioma }),
-      });
+      // Lo normal es mandar el texto que ya extrajo el navegador. Solo si
+      // eso falló se sube el archivo, y entonces va en binario.
+      const res = binario
+        ? await fetch("/api/tutor", {
+            method: "POST",
+            headers: { "Content-Type": "application/pdf", "x-idioma": idioma },
+            body: binario,
+          })
+        : await fetch("/api/tutor", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ texto, paginas, caracteres, idioma }),
+          });
       const json = await res.json();
       if (!res.ok) {
         setError(t.tutor.errores[json.codigo] || t.tutor.errores.generico);

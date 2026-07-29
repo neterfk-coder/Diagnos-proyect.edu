@@ -9,32 +9,92 @@ function pesoLegible(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Tope de subida del respaldo, por debajo del límite de la plataforma. */
+const MAX_SUBIDA = 4 * 1024 * 1024;
+
+/**
+ * El servidor solo analiza los primeros 48 000 caracteres, así que enviar
+ * más es desperdicio. Se manda un poco de margen y, aparte, la longitud
+ * real del documento para poder avisar de que se recortó.
+ */
+const MAX_ENVIO = 52000;
+
 export default function ZonaPdf({ onEnviar, cargando }) {
   const { t } = useIdioma();
-  const [archivo, setArchivo] = useState(null); // { nombre, peso, base64 }
+  const [archivo, setArchivo] = useState(null);
   const [texto, setTexto] = useState("");
   const [arrastrando, setArrastrando] = useState(false);
+  const [leyendo, setLeyendo] = useState(false);
+  const [aviso, setAviso] = useState(null);
   const entrada = useRef(null);
 
-  function leer(f) {
+  /**
+   * El texto se extrae aquí, en el navegador, y al servidor solo viaja el
+   * texto. Mandar el PDF en base64 inflaba el cuerpo un 33% y cualquier
+   * documento de más de ~3 MB chocaba con el límite de la plataforma.
+   *
+   * unpdf se carga por importación dinámica para que pdf.js no entre en el
+   * paquete inicial: solo se descarga cuando alguien elige un PDF.
+   */
+  async function leer(f) {
     if (!f || f.type !== "application/pdf") return;
-    const lector = new FileReader();
-    lector.onload = () => {
+    setAviso(null);
+    setLeyendo(true);
+
+    try {
+      const { getDocumentProxy, extractText } = await import("unpdf");
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const pdf = await getDocumentProxy(bytes);
+      const { text, totalPages } = await extractText(pdf, { mergePages: true });
+      const limpio = String(text || "").trim();
+
+      if (limpio.length < 200) {
+        setAviso(t.tutor.errores.sin_texto);
+        setArchivo(null);
+        return;
+      }
+
       setArchivo({
         nombre: f.name,
         peso: f.size,
-        base64: String(lector.result).split(",")[1],
+        texto: limpio.slice(0, MAX_ENVIO),
+        caracteres: limpio.length,
+        paginas: totalPages || 0,
+        binario: null,
       });
-    };
-    lector.readAsDataURL(f);
+    } catch {
+      // No se pudo leer aquí: se deja el archivo para que lo intente el
+      // servidor, siempre que quepa en el límite de subida.
+      if (f.size > MAX_SUBIDA) {
+        setAviso(t.tutor.errores.grande);
+        setArchivo(null);
+        return;
+      }
+      setArchivo({
+        nombre: f.name,
+        peso: f.size,
+        texto: null,
+        paginas: 0,
+        binario: f,
+      });
+    } finally {
+      setLeyendo(false);
+    }
   }
 
   function enviar() {
+    if (leyendo) return;
     if (!archivo && !texto.trim()) return;
-    onEnviar({
-      pdfBase64: archivo?.base64 || null,
-      texto: archivo ? null : texto.trim(),
-    });
+    onEnviar(
+      archivo
+        ? {
+            texto: archivo.texto,
+            paginas: archivo.paginas,
+            caracteres: archivo.caracteres,
+            binario: archivo.binario,
+          }
+        : { texto: texto.trim(), paginas: 0, caracteres: texto.trim().length, binario: null }
+    );
   }
 
   return (
@@ -81,6 +141,7 @@ export default function ZonaPdf({ onEnviar, cargando }) {
               </p>
               <p className="mt-0.5 font-mono text-xs text-acero">
                 {pesoLegible(archivo.peso)}
+                {archivo.paginas > 0 && ` · ${archivo.paginas} ${t.tutor.paginas}`}
               </p>
             </div>
             <button
@@ -109,11 +170,14 @@ export default function ZonaPdf({ onEnviar, cargando }) {
                 <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
               </svg>
             </span>
-            <p className="mt-4 text-sm text-tinta">{t.tutor.soltar}</p>
+            <p className="mt-4 text-sm text-tinta">
+              {leyendo ? t.tutor.leyendoPdf : t.tutor.soltar}
+            </p>
             <p className="mt-1 font-mono text-xs text-acero">{t.tutor.limite}</p>
             <button
               type="button"
               onClick={() => entrada.current?.click()}
+              disabled={leyendo}
               className="boton-secundario mt-4"
             >
               {t.tutor.elegir}
@@ -128,6 +192,12 @@ export default function ZonaPdf({ onEnviar, cargando }) {
           </>
         )}
       </div>
+
+      {aviso && (
+        <p className="mt-4 animate-aparecer rounded-2xl border border-ambar/40 bg-ambar/10 px-4 py-3 text-sm leading-relaxed text-tinta">
+          {aviso}
+        </p>
+      )}
 
       {/* Alternativa: pegar texto */}
       <div className="my-6 flex items-center gap-4 text-[11px] uppercase tracking-etiqueta text-acero">

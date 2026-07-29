@@ -45,8 +45,16 @@ const LECTORES = [
 const MAX_TROZOS = LECTORES.length;
 const MAX_CARACTERES = TROZO * MAX_TROZOS;
 
-/** Tope del PDF en bytes (~12 MB), antes de decodificar. */
-const MAX_BYTES = 12 * 1024 * 1024;
+/**
+ * Tope del PDF que llega al servidor.
+ *
+ * Vercel corta el cuerpo de la petición en 4,5 MB y devuelve su propia
+ * página de error antes de que este código llegue a ejecutarse, así que el
+ * tope real es de plataforma, no nuestro. Se deja por debajo para poder dar
+ * un mensaje propio. Lo habitual es que el navegador extraiga el texto y
+ * aquí no llegue ningún PDF: esta ruta es el respaldo.
+ */
+const MAX_BYTES = 4 * 1024 * 1024;
 
 function sistema(idioma) {
   const lengua = LENGUAS[idioma] || LENGUAS.en;
@@ -164,42 +172,79 @@ function normalizar(d) {
   };
 }
 
+/** Extrae el texto de unos bytes de PDF. Devuelve null si no es un PDF. */
+async function leerPdf(bytes) {
+  try {
+    const pdf = await getDocumentProxy(new Uint8Array(bytes));
+    const extraido = await extractText(pdf, { mergePages: true });
+    return {
+      texto: String(extraido.text || "").trim(),
+      paginas: extraido.totalPages || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(peticion) {
   try {
-    const { pdfBase64, texto, idioma } = await peticion.json();
-
-    if (!pdfBase64 && !texto?.trim()) {
-      return NextResponse.json(
-        { error: "Send a PDF or paste some text." },
-        { status: 400 }
-      );
-    }
-
-    let contenido = (texto || "").trim();
+    let contenido = "";
     let paginas = 0;
+    let idioma = "en";
+    let caracteresOriginales = 0;
 
-    if (pdfBase64) {
-      if (pdfBase64.length * 0.75 > MAX_BYTES) {
+    const tipo = peticion.headers.get("content-type") || "";
+
+    if (tipo.includes("application/pdf")) {
+      // Respaldo: el navegador no pudo extraer el texto y sube el archivo.
+      // Va en binario y no en base64 para no inflar un 33% el cuerpo.
+      idioma = peticion.headers.get("x-idioma") || "en";
+      const bytes = await peticion.arrayBuffer();
+
+      if (bytes.byteLength > MAX_BYTES) {
         return NextResponse.json(
-          { error: "That PDF is too large. The limit is 12 MB.", codigo: "grande" },
+          { error: "That PDF is too large to upload.", codigo: "grande" },
           { status: 413 }
         );
       }
 
-      const bytes = Buffer.from(pdfBase64, "base64");
-      let pdf;
-      try {
-        pdf = await getDocumentProxy(new Uint8Array(bytes));
-      } catch {
+      const leido = await leerPdf(bytes);
+      if (!leido) {
         return NextResponse.json(
           { error: "That file could not be read as a PDF.", codigo: "ilegible" },
           { status: 400 }
         );
       }
+      contenido = leido.texto;
+      paginas = leido.paginas;
+    } else {
+      // Camino normal: llega texto ya extraído, o pegado a mano.
+      const cuerpo = await peticion.json();
+      idioma = cuerpo.idioma || "en";
+      contenido = (cuerpo.texto || "").trim();
+      paginas = Number(cuerpo.paginas) || 0;
+      // Longitud del documento completo: el navegador recorta antes de
+      // enviar, así que sin este dato no sabríamos si hubo recorte.
+      caracteresOriginales = Number(cuerpo.caracteres) || 0;
 
-      const extraido = await extractText(pdf, { mergePages: true });
-      paginas = extraido.totalPages || 0;
-      contenido = String(extraido.text || "").trim();
+      if (!contenido && cuerpo.pdfBase64) {
+        const leido = await leerPdf(Buffer.from(cuerpo.pdfBase64, "base64"));
+        if (!leido) {
+          return NextResponse.json(
+            { error: "That file could not be read as a PDF.", codigo: "ilegible" },
+            { status: 400 }
+          );
+        }
+        contenido = leido.texto;
+        paginas = leido.paginas;
+      }
+    }
+
+    if (!contenido) {
+      return NextResponse.json(
+        { error: "Send a PDF or paste some text." },
+        { status: 400 }
+      );
     }
 
     // Un PDF escaneado sin capa de texto extrae casi nada: hay que decirlo
@@ -215,7 +260,10 @@ export async function POST(peticion) {
       );
     }
 
-    const recortado = contenido.length > MAX_CARACTERES;
+    // El total real puede venir del cliente (que ya recortó) o ser lo que
+    // haya llegado, cuando el texto se extrajo aquí o se pegó a mano.
+    const totalCaracteres = Math.max(caracteresOriginales, contenido.length);
+    const recortado = totalCaracteres > MAX_CARACTERES;
     const lengua = LENGUAS[idioma] || LENGUAS.en;
     const groq = clienteGroq();
 
@@ -274,7 +322,7 @@ export async function POST(peticion) {
       ...datos,
       meta: {
         paginas,
-        caracteres: contenido.length,
+        caracteres: totalCaracteres,
         recortado,
         partes: trozos.length,
         partesFallidas: fallosLectura,

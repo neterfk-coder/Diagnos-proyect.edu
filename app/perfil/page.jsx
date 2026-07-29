@@ -7,6 +7,39 @@ import CabeceraPagina from "@/components/CabeceraPagina";
 import SelectorIdioma from "@/components/SelectorIdioma";
 import { useSesion } from "@/lib/sesion";
 import { useIdioma } from "@/lib/i18n/contexto";
+import { useProgreso } from "@/lib/progreso";
+import Avatar from "@/components/perfil/Avatar";
+import EditorPerfil from "@/components/perfil/EditorPerfil";
+
+/** Lo que el usuario lleva acumulado. Sale del progreso local. */
+function Logros() {
+  const { t } = useIdioma();
+  const { total, racha, mejorRacha, pegatinas, montado } = useProgreso();
+  const p = t.paginas.perfil;
+
+  const datos = [
+    { valor: montado ? total : 0, etiqueta: t.progreso.puntos },
+    { valor: montado ? racha : 0, etiqueta: p.rachaActual },
+    { valor: montado ? mejorRacha : 0, etiqueta: p.rachaMejor },
+    { valor: montado ? pegatinas.length : 0, etiqueta: p.pegatinas },
+  ];
+
+  return (
+    <dl className="mt-8 grid grid-cols-2 gap-4 border-t border-hielo pt-6 sm:grid-cols-4">
+      {datos.map((d) => (
+        <div key={d.etiqueta}>
+          <dt className="etiqueta">{d.etiqueta}</dt>
+          <dd
+            translate="no"
+            className="notranslate titulo mt-1 text-3xl font-semibold tabular-nums text-ambar"
+          >
+            {d.valor}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 /**
  * Aula y tipo de cuenta.
@@ -154,8 +187,6 @@ export default function Perfil() {
     router.push("/");
   }
 
-  const inicial = (sesion?.nombre || "?").trim().charAt(0).toUpperCase();
-
   return (
     <div className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
       <CabeceraPagina etiqueta={p.etiqueta} titulo={p.titulo} />
@@ -183,18 +214,9 @@ export default function Perfil() {
           {/* ---------- Identidad ---------- */}
           <div className="tarjeta animate-aparecer p-6 sm:p-8">
             <div className="flex flex-wrap items-center gap-5">
-              <span
-                translate="no"
-                className={`notranslate grid h-16 w-16 shrink-0 place-items-center rounded-full text-xl font-medium ${
-                  sesion.invitado
-                    ? "border border-hielo bg-nube text-acero"
-                    : "bg-electrico text-abismo shadow-azul"
-                }`}
-              >
-                {sesion.invitado ? "★" : inicial}
-              </span>
+              <Avatar sesion={sesion} tam={76} anillo />
               <div className="min-w-0">
-                <h2 className="titulo truncate text-2xl font-semibold">
+                <h2 className="titulo truncate text-2xl font-semibold text-white">
                   {sesion.invitado ? p.invitadoTitulo : sesion.nombre}
                 </h2>
                 <p className="mt-1 text-sm text-acero">
@@ -202,8 +224,16 @@ export default function Perfil() {
                     ? p.invitadoTexto
                     : t.nav.roles[sesion.rol] || sesion.rol}
                 </p>
+                {!sesion.invitado && sesion.bio && (
+                  <p className="mt-2 max-w-md text-sm font-light leading-relaxed text-bruma">
+                    {sesion.bio}
+                  </p>
+                )}
               </div>
             </div>
+
+            {/* Lo conseguido: da sentido a tener perfil */}
+            {!sesion.invitado && <Logros />}
 
             {!sesion.invitado && (
               <dl className="mt-8 grid gap-x-8 gap-y-5 border-t border-hielo pt-6 sm:grid-cols-2">
@@ -232,6 +262,9 @@ export default function Perfil() {
               </Link>
             )}
           </div>
+
+          {/* ---------- Personalizacion ---------- */}
+          {!sesion.invitado && <EditorPerfil sesion={sesion} />}
 
           {/* ---------- Aula y rol ---------- */}
           {!sesion.invitado && <SeccionAula sesion={sesion} />}

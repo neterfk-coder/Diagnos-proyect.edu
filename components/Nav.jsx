@@ -8,6 +8,8 @@ import { useIdioma } from "@/lib/i18n/contexto";
 import SelectorIdioma from "@/components/SelectorIdioma";
 import BarraProgreso from "@/components/progreso/BarraProgreso";
 import Racha from "@/components/progreso/Racha";
+import Campana from "@/components/notificaciones/Campana";
+import Avatar from "@/components/perfil/Avatar";
 
 /** Rutas que traen su propia cáscara a pantalla completa. */
 const RUTAS_ACCESO = ["/entrar", "/registro", "/recuperar"];
@@ -39,8 +41,6 @@ export default function Nav() {
     await cerrarSesion();
     router.push("/");
   }
-
-  const inicial = (sesion?.nombre || "?").trim().charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 border-b border-hielo/70 bg-abismo/70 shadow-[0_1px_24px_rgba(0,0,0,0.45)] backdrop-blur-xl">
@@ -130,6 +130,8 @@ export default function Nav() {
 
           <span className="mx-1 hidden h-5 w-px bg-hielo sm:block" />
 
+          <Campana />
+
           <Racha />
 
           <BarraProgreso />
@@ -158,16 +160,7 @@ export default function Nav() {
                 aria-haspopup="menu"
                 className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-nube"
               >
-                <span
-                  translate="no"
-                  className={`notranslate grid h-8 w-8 place-items-center rounded-full text-xs font-medium ${
-                    sesion.invitado
-                      ? "border border-hielo bg-nube text-acero"
-                      : "bg-electrico text-abismo"
-                  }`}
-                >
-                  {sesion.invitado ? "★" : inicial}
-                </span>
+                <Avatar sesion={sesion} tam={32} />
                 <span className="hidden max-w-[9rem] truncate text-sm text-tinta sm:inline">
                   {sesion.invitado ? t.nav.invitado : sesion.nombre}
                 </span>

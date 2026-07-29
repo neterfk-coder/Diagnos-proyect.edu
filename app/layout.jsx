@@ -6,6 +6,9 @@ import { ProveedorIdioma } from "@/lib/i18n/contexto";
 import { ProveedorSesion } from "@/lib/sesion";
 import { ProveedorProgreso } from "@/lib/progreso";
 import CelebracionRacha from "@/components/progreso/CelebracionRacha";
+import { ProveedorNotificaciones } from "@/lib/notificaciones";
+import Avisos from "@/components/notificaciones/Avisos";
+import PuenteAvisos from "@/components/notificaciones/PuenteAvisos";
 
 export const metadata = {
   title: "Diagnos — Fix your reasoning, not just your answer",
@@ -28,13 +31,17 @@ export default function RootLayout({ children }) {
       <body>
         <ProveedorIdioma>
           <ProveedorSesion>
+            <ProveedorNotificaciones>
             <ProveedorProgreso>
               <FondoAnimado />
               <Nav />
               <main className="min-h-screen">{children}</main>
               <Pie />
               <CelebracionRacha />
+              <Avisos />
+              <PuenteAvisos />
             </ProveedorProgreso>
+            </ProveedorNotificaciones>
           </ProveedorSesion>
         </ProveedorIdioma>
       </body>

@@ -7,6 +7,8 @@ import {
   crearCuenta,
   cerrarSesionRemota,
   guardarAula,
+  guardarPerfil,
+  prefsActuales,
   aulaDeUsuario,
   hayCuentas,
 } from "@/lib/cuenta";
@@ -35,6 +37,10 @@ function desdeUsuario(u) {
     correo: u.email || null,
     rol: u.prefs?.rol === "docente" ? "docente" : "estudiante",
     aula: aulaDeUsuario(u),
+    bio: u.prefs?.bio || "",
+    avatar: u.prefs?.avatar || null,
+    color: u.prefs?.color || "ambar",
+    prefs: u.prefs || {},
     invitado: false,
   };
 }
@@ -102,6 +108,20 @@ export function ProveedorSesion({ children }) {
     return usuario;
   }, []);
 
+  /**
+   * Personalización: nombre, descripción, avatar y color.
+   * Se leen las preferencias del servidor antes de escribir porque
+   * updatePrefs reemplaza el objeto entero, y con solo los campos nuevos se
+   * borrarían el rol y el aula.
+   */
+  const personalizar = useCallback(async ({ nombre, ...cambios }) => {
+    const actuales = await prefsActuales();
+    await guardarPerfil({ nombre, prefsActuales: actuales, cambios });
+    const usuario = await usuarioActual();
+    if (usuario) setSesion(desdeUsuario(usuario));
+    return usuario;
+  }, []);
+
   const salir = useCallback(async () => {
     escribirMarcaInvitado(false);
     await cerrarSesionRemota();
@@ -118,6 +138,7 @@ export function ProveedorSesion({ children }) {
         registrar,
         entrarComoInvitado,
         actualizarPerfil,
+        personalizar,
         salir,
         refrescar,
       }}

@@ -116,6 +116,16 @@ module.exports = {
         },
         // --- Racha ---
         // El trazo se dibuja desde su origen hacia la punta
+        entrarAviso: {
+          from: { opacity: '0', transform: 'translateX(1.5rem) scale(0.96)' },
+          to: { opacity: '1', transform: 'translateX(0) scale(1)' },
+        },
+        campanear: {
+          '0%, 70%, 100%': { transform: 'rotate(0deg)' },
+          '78%': { transform: 'rotate(11deg)' },
+          '86%': { transform: 'rotate(-9deg)' },
+          '94%': { transform: 'rotate(5deg)' },
+        },
         dibujarRama: {
           from: { strokeDashoffset: "420" },
           to: { strokeDashoffset: "0" },
@@ -220,6 +230,8 @@ module.exports = {
         revelar: "revelar 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
         "gradiente-vivo": "gradienteVivo 9s ease-in-out infinite",
         derivar: "derivar 26s ease-in-out infinite",
+        "entrar-aviso": "entrarAviso 0.45s cubic-bezier(0.22, 1, 0.36, 1) both",
+        campanear: "campanear 3.2s ease-in-out infinite",
         "dibujar-rama": "dibujarRama 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
         brotar: "brotar 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both",
         escanear: "escanear 2.1s ease-in-out infinite",

@@ -8,6 +8,14 @@ import { useIdioma } from "@/lib/i18n/contexto";
 const MAX_BIO = 160;
 /** Lado del avatar guardado. A 128 px la foto pesa unos 6 KB en JPEG. */
 const LADO_AVATAR = 128;
+/**
+ * Tope del data URI. Las preferencias de Appwrite se cortan en 64 KB
+ * (comprobado: 60 KB pasa, 64 KB devuelve 400), y ahí también viven el rol,
+ * el aula y la descripción, así que el avatar se queda muy por debajo.
+ */
+const MAX_AVATAR = 24 * 1024;
+/** Calidades a probar, de mejor a peor, hasta que quepa. */
+const CALIDADES = [0.72, 0.6, 0.48, 0.36, 0.25];
 
 /**
  * Recorta la imagen a un cuadrado centrado y la reduce.
@@ -39,7 +47,20 @@ function prepararAvatar(archivo) {
         LADO_AVATAR,
         LADO_AVATAR
       );
-      resolve(lienzo.toDataURL("image/jpeg", 0.72));
+
+      // Una foto muy detallada puede pasarse del tope aunque mida 128 px,
+      // así que se baja la calidad hasta que quepa. Guardar algo que el
+      // servidor va a rechazar daría un error sin explicación al usuario.
+      let datos = lienzo.toDataURL("image/jpeg", CALIDADES[0]);
+      for (let i = 1; i < CALIDADES.length && datos.length > MAX_AVATAR; i++) {
+        datos = lienzo.toDataURL("image/jpeg", CALIDADES[i]);
+      }
+
+      if (datos.length > MAX_AVATAR) {
+        reject(new Error("demasiado pesada"));
+        return;
+      }
+      resolve(datos);
     };
 
     img.onerror = () => {

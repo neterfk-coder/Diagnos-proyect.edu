@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import CabeceraPagina from "@/components/CabeceraPagina";
 import RevelarAlScroll from "@/components/RevelarAlScroll";
 import ZonaPdf from "@/components/tutor/ZonaPdf";
 import Pestanas from "@/components/tutor/Pestanas";
 import Flashcard from "@/components/tutor/Flashcard";
+import MapaMental from "@/components/tutor/MapaMental";
+import Quiz from "@/components/tutor/Quiz";
+import AnalizandoPdf from "@/components/tutor/AnalizandoPdf";
 import { useIdioma } from "@/lib/i18n/contexto";
 import { useProgreso } from "@/lib/progreso";
 
@@ -15,27 +18,23 @@ export default function Tutor() {
   const [material, setMaterial] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
-  const [fase, setFase] = useState(0);
   const [pestana, setPestana] = useState(0);
   const [carta, setCarta] = useState(0);
   const [pistas, setPistas] = useState({});
-
-  // Mensajes de progreso: el proceso tarda unos segundos y una pantalla
-  // quieta se percibe como colgada.
-  useEffect(() => {
-    if (!cargando) return;
-    setFase(0);
-    const reloj = setInterval(
-      () => setFase((f) => Math.min(f + 1, t.tutor.fases.length - 1)),
-      1600
-    );
-    return () => clearInterval(reloj);
-  }, [cargando, t.tutor.fases.length]);
+  const [breve, setBreve] = useState(true);
+  const [enCurso, setEnCurso] = useState(null); // datos reales del documento
 
   async function generar({ texto, paginas, caracteres, binario }) {
     setCargando(true);
     setError(null);
     setMaterial(null);
+    // Lo que ya sabemos del documento, para que la espera muestre cifras
+    // reales en vez de un porcentaje inventado.
+    setEnCurso({
+      paginas,
+      caracteres,
+      partes: Math.min(4, Math.max(1, Math.ceil((caracteres || 0) / 12000))),
+    });
     try {
       // Lo normal es mandar el texto que ya extrajo el navegador. Solo si
       // eso falló se sube el archivo, y entonces va en binario.
@@ -67,9 +66,12 @@ export default function Tutor() {
     }
   }
 
+  // Las pestañas que no traen contenido no se muestran, para no dejar
+  // secciones vacías si el modelo devolvió menos de lo pedido.
   const pestanas = material
     ? [
         { id: "resumen", texto: t.tutor.pestanas.resumen },
+        material.mapa && { id: "mapa", texto: t.tutor.pestanaMapa },
         {
           id: "puntos",
           texto: t.tutor.pestanas.puntos,
@@ -80,13 +82,20 @@ export default function Tutor() {
           texto: t.tutor.pestanas.flashcards,
           cuenta: material.flashcards.length,
         },
+        material.quiz?.length > 0 && {
+          id: "quiz",
+          texto: t.tutor.pestanaQuiz,
+          cuenta: material.quiz.length,
+        },
         {
           id: "ejercicios",
           texto: t.tutor.pestanas.ejercicios,
           cuenta: material.ejercicios.length,
         },
-      ]
+      ].filter(Boolean)
     : [];
+
+  const activa = pestanas[pestana]?.id;
 
   const totalCartas = material?.flashcards.length || 0;
 
@@ -103,34 +112,11 @@ export default function Tutor() {
           <ZonaPdf onEnviar={generar} cargando={cargando} />
 
           {cargando && (
-            <div className="tarjeta mt-6 flex items-center gap-4 p-6">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="shrink-0 animate-girar text-ambar"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="9"
-                  stroke="currentColor"
-                  strokeOpacity="0.25"
-                  strokeWidth="2.5"
-                />
-                <path
-                  d="M21 12a9 9 0 0 0-9-9"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <p key={fase} className="animate-aparecer text-sm text-tinta">
-                {t.tutor.fases[fase]}
-              </p>
-            </div>
+            <AnalizandoPdf
+              paginas={enCurso?.paginas}
+              caracteres={enCurso?.caracteres}
+              partes={enCurso?.partes}
+            />
           )}
 
           {error && (
@@ -197,24 +183,68 @@ export default function Tutor() {
 
           <div className="mt-8">
             {/* ---------- Resumen ---------- */}
-            {pestana === 0 && (
-              <div className="tarjeta animate-aparecer space-y-4 p-6 sm:p-9">
-                {material.resumen
-                  .split(/\n\n+/)
-                  .filter(Boolean)
-                  .map((p, i) => (
+            {activa === "resumen" && (
+              <div className="animate-aparecer">
+                {/* Breve o completo: leer tres párrafos cuando buscabas la
+                    idea principal es lo que hace abandonar un resumen. */}
+                {material.resumenCorto && (
+                  <div className="mb-4 inline-flex rounded-full border border-hielo bg-nube p-1">
+                    {[
+                      { id: true, texto: t.tutor.resumenBreve },
+                      { id: false, texto: t.tutor.resumenCompleto },
+                    ].map((o) => (
+                      <button
+                        key={String(o.id)}
+                        type="button"
+                        onClick={() => setBreve(o.id)}
+                        aria-pressed={breve === o.id}
+                        className={`rounded-full px-4 py-1.5 text-xs transition-all duration-300 ${
+                          breve === o.id
+                            ? "bg-ambar font-semibold text-abismo"
+                            : "text-acero hover:text-tinta"
+                        }`}
+                      >
+                        {o.texto}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="tarjeta space-y-4 p-6 sm:p-9">
+                  {(breve && material.resumenCorto
+                    ? [material.resumenCorto]
+                    : material.resumen.split(/\n\n+/).filter(Boolean)
+                  ).map((p, i) => (
                     <p
                       key={i}
-                      className="text-[15px] font-light leading-relaxed text-tinta"
+                      className={`font-light leading-relaxed text-tinta ${
+                        breve && material.resumenCorto
+                          ? "text-lg sm:text-xl"
+                          : "text-[15px]"
+                      }`}
                     >
                       {p}
                     </p>
                   ))}
+                </div>
               </div>
             )}
 
+            {/* ---------- Mapa mental ---------- */}
+            {activa === "mapa" && material.mapa && (
+              <div className="animate-aparecer">
+                <MapaMental mapa={material.mapa} />
+                <p className="mt-3 px-1 text-xs text-acero">{t.tutor.mapaAyuda}</p>
+              </div>
+            )}
+
+            {/* ---------- Cuestionario ---------- */}
+            {activa === "quiz" && material.quiz?.length > 0 && (
+              <Quiz preguntas={material.quiz} />
+            )}
+
             {/* ---------- Puntos clave ---------- */}
-            {pestana === 1 && (
+            {activa === "puntos" && (
               <ul className="grid animate-aparecer gap-4 sm:grid-cols-2">
                 {material.puntosClave.map((p, i) => (
                   <RevelarAlScroll
@@ -238,7 +268,7 @@ export default function Tutor() {
             )}
 
             {/* ---------- Flashcards ---------- */}
-            {pestana === 2 && totalCartas > 0 && (
+            {activa === "flashcards" && totalCartas > 0 && (
               <div className="animate-aparecer">
                 <Flashcard
                   tarjeta={material.flashcards[carta]}
@@ -288,7 +318,7 @@ export default function Tutor() {
             )}
 
             {/* ---------- Ejercicios ---------- */}
-            {pestana === 3 && (
+            {activa === "ejercicios" && (
               <ol className="animate-aparecer space-y-4">
                 {material.ejercicios.map((e, i) => (
                   <RevelarAlScroll

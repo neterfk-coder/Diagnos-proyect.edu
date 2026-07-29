@@ -115,6 +115,22 @@ module.exports = {
           "50%": { backgroundPosition: "100% 50%" },
         },
         // --- Racha ---
+        // El trazo se dibuja desde su origen hacia la punta
+        dibujarRama: {
+          from: { strokeDashoffset: "420" },
+          to: { strokeDashoffset: "0" },
+        },
+        // Los nodos del mapa aparecen con un rebote corto
+        brotar: {
+          from: { opacity: "0", transform: "scale(0.72)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        // Línea que recorre la hoja mientras se analiza el PDF
+        escanear: {
+          "0%": { transform: "translateY(-2.5rem)", opacity: "0" },
+          "18%, 82%": { opacity: "1" },
+          "100%": { transform: "translateY(7.5rem)", opacity: "0" },
+        },
         llama: {
           "0%, 100%": { transform: "scale(1) rotate(-2deg)" },
           "25%": { transform: "scale(1.08) rotate(2deg)" },
@@ -204,6 +220,9 @@ module.exports = {
         revelar: "revelar 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
         "gradiente-vivo": "gradienteVivo 9s ease-in-out infinite",
         derivar: "derivar 26s ease-in-out infinite",
+        "dibujar-rama": "dibujarRama 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
+        brotar: "brotar 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        escanear: "escanear 2.1s ease-in-out infinite",
         llama: "llama 2.4s ease-in-out infinite",
         "crecer-racha": "crecerRacha 0.85s cubic-bezier(0.22, 1, 0.36, 1) both",
         "entrar-dia": "entrarDia 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",

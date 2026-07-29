@@ -70,17 +70,34 @@ Reply with ONE JSON object, nothing else, exactly in this shape:
 
 {
   "titulo": "a short concrete title for the document",
+  "resumenCorto": "the whole document in 2 or 3 sentences",
   "resumen": "3 to 5 paragraphs separated by \\n\\n",
+  "mapa": {
+    "centro": "the central idea, 4 words maximum",
+    "ramas": [ { "titulo": "...", "hijos": ["...", "..."] } ]
+  },
   "puntosClave": [ { "titulo": "...", "detalle": "..." } ],
   "flashcards": [ { "anverso": "...", "reverso": "..." } ],
+  "quiz": [ { "pregunta": "...", "opciones": ["...","...","...","..."], "correcta": 0, "porque": "..." } ],
   "ejercicios": [ { "enunciado": "...", "pista": "..." } ]
 }
 
 Content rules:
 - "titulo": name what the document is about. Never "Summary" or "Document".
+- "resumenCorto": the essence in 2-3 sentences. If the student read only this, they
+  should still know what the document argues. No preamble, no "this document
+  explains" — go straight to the content.
 - "resumen": a genuinely elaborated summary that follows the document's line of
   reasoning and explains why it matters. Do not list section headings back; write
   prose a student can actually learn from. Separate paragraphs with \\n\\n.
+- "mapa": a mind map of the document. EXACTLY 5 branches, each with 2 to 4 children.
+  "centro" is at most 4 words. Branch titles are at most 4 words and children at most
+  6 words: they are labels on a diagram, not sentences. The branches must be the real
+  divisions of the content, not generic ones like "introduction" or "conclusion".
+- "quiz": EXACTLY 5 multiple-choice questions with 4 options each. "correcta" is the
+  0-based index of the right option. The wrong options must be plausible — a
+  distractor nobody would pick teaches nothing. "porque" explains in one sentence why
+  the right one is right, and it is shown only after answering.
 - "puntosClave": EXACTLY 6 entries. "titulo" of at most 6 words, "detalle" of 1-2
   sentences. These are the ideas that must survive if everything else is forgotten.
 - "flashcards": EXACTLY 8 entries. "anverso" is a question or a term; "reverso" is
@@ -96,7 +113,7 @@ Hard rules:
 - Respect the counts: 6, 8 and 4. Do not return a single-element array.
 
 Final reminder: everything in ${lengua}, valid JSON, and the counts are 6 key
-points, 8 flashcards and 4 exercises.`;
+points, 5 map branches, 8 flashcards, 5 quiz questions and 4 exercises.`;
 }
 
 /** Prompt de la fase de lectura: condensar un trozo sin interpretarlo. */
@@ -163,11 +180,36 @@ async function leerTrozos(groq, trozos, idioma) {
 /** Normaliza lo que devuelva el modelo para que la interfaz nunca reviente. */
 function normalizar(d) {
   const lista = (v) => (Array.isArray(v) ? v : []);
+  const texto = (v) => (typeof v === "string" ? v : "");
+
+  // El mapa se descarta entero si no trae ramas utilizables: media rama
+  // dibujada queda peor que no dibujar el mapa.
+  const ramas = lista(d?.mapa?.ramas)
+    .filter((r) => r?.titulo)
+    .map((r) => ({ titulo: r.titulo, hijos: lista(r.hijos).filter(Boolean).slice(0, 4) }))
+    .slice(0, 6);
+  const mapa =
+    ramas.length >= 3 && d?.mapa?.centro
+      ? { centro: texto(d.mapa.centro), ramas }
+      : null;
+
   return {
-    titulo: typeof d?.titulo === "string" ? d.titulo : "",
-    resumen: typeof d?.resumen === "string" ? d.resumen : "",
+    titulo: texto(d?.titulo),
+    resumenCorto: texto(d?.resumenCorto),
+    resumen: texto(d?.resumen),
+    mapa,
     puntosClave: lista(d?.puntosClave).filter((p) => p?.titulo || p?.detalle),
     flashcards: lista(d?.flashcards).filter((f) => f?.anverso && f?.reverso),
+    // Una pregunta sin índice válido no se puede corregir: fuera.
+    quiz: lista(d?.quiz).filter(
+      (q) =>
+        q?.pregunta &&
+        Array.isArray(q.opciones) &&
+        q.opciones.length >= 2 &&
+        Number.isInteger(q.correcta) &&
+        q.correcta >= 0 &&
+        q.correcta < q.opciones.length
+    ),
     ejercicios: lista(d?.ejercicios).filter((e) => e?.enunciado),
   };
 }
@@ -297,7 +339,9 @@ export async function POST(peticion) {
 
     const respuesta = await groq.chat.completions.create({
       model: MODELO_LARGO,
-      max_completion_tokens: 4000,
+      // Sube a 6000 porque ahora también salen el mapa y el cuestionario.
+      // Con las notas de entrada (~2000) queda holgado bajo los 12 000 TPM.
+      max_completion_tokens: 6000,
       temperature: 0.4,
       response_format: { type: "json_object" },
       messages: [

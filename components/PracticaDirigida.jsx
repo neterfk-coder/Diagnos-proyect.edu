@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useIdioma } from "@/lib/i18n/contexto";
 import { useProgreso } from "@/lib/progreso";
 import { textoMisconception } from "@/lib/misconceptions";
+import { crearJWT } from "@/lib/cuenta";
 
 /** Un ejercicio con su caja de respuesta y su veredicto. */
 function Ejercicio({ ejercicio, indice, diagnostico, onResultado }) {
@@ -204,6 +205,26 @@ export default function PracticaDirigida({ diagnostico }) {
     }
   }
 
+  /**
+   * Deja constancia en el servidor de que esta concepción errónea se superó.
+   * Es lo que permite al panel docente mostrar errores superados y no solo
+   * errores cometidos. No se espera la respuesta: si falla, el estudiante no
+   * debe notarlo.
+   */
+  function registrar() {
+    crearJWT()
+      .then((jwt) =>
+        fetch("/api/superacion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ misconception: diagnostico.misconception, jwt }),
+        })
+      )
+      .catch(() => {
+        /* el logro local ya está concedido */
+      });
+  }
+
   function anotar(indice, ok) {
     // Los puntos se calculan FUERA del actualizador: React puede ejecutar un
     // actualizador más de una vez, y con sumar() dentro se contaban dobles.
@@ -214,7 +235,10 @@ export default function PracticaDirigida({ diagnostico }) {
       sumar("ejercicioSuperado");
       const trasEste = { ...superados, [indice]: true };
       const cuantos = Object.values(trasEste).filter(Boolean).length;
-      if (cuantos === (ejercicios?.length || 0)) sumar("bucleCerrado");
+      if (cuantos === (ejercicios?.length || 0)) {
+        sumar("bucleCerrado");
+        registrar();
+      }
     }
     setSuperados((s) => ({ ...s, [indice]: ok }));
   }

@@ -8,6 +8,16 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  HITOS,
+  hoyISO,
+  rachaVigente,
+  semana,
+  tocarDia,
+} from "@/lib/racha-logica";
+
+// Se reexportan para que los componentes sigan importando desde aquí
+export { HITOS, hoyISO, rachaVigente, semana };
 
 /** Experiencia necesaria para llenar la barra y desbloquear un cofre. */
 export const META = 100;
@@ -58,9 +68,6 @@ export const COLORES_RAREZA = {
   },
 };
 
-/** Hitos de racha que merecen celebración aparte. */
-export const HITOS = [3, 7, 14, 30, 60, 100, 365];
-
 const CLAVE = "diagnos:progreso";
 const Contexto = createContext(null);
 
@@ -74,53 +81,6 @@ const INICIAL = {
   ultimoDia: null,
   dias: [],
 };
-
-/** Fecha local en formato AAAA-MM-DD. Nada de UTC: la racha es del usuario. */
-export function hoyISO(fecha = new Date()) {
-  const y = fecha.getFullYear();
-  const m = String(fecha.getMonth() + 1).padStart(2, "0");
-  const d = String(fecha.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-/** Días completos entre dos fechas ISO, contando por días naturales. */
-function diasEntre(desdeISO, hastaISO) {
-  const [a1, m1, d1] = desdeISO.split("-").map(Number);
-  const [a2, m2, d2] = hastaISO.split("-").map(Number);
-  const a = Date.UTC(a1, m1 - 1, d1);
-  const b = Date.UTC(a2, m2 - 1, d2);
-  return Math.round((b - a) / 86400000);
-}
-
-/**
- * Racha que se puede mostrar hoy.
- *
- * Lo guardado puede estar caducado: si la última actividad fue anteayer, la
- * racha ya se rompió aunque el número siga escrito en el almacenamiento.
- * Ayer todavía cuenta, porque el día no ha terminado.
- */
-export function rachaVigente(datos, dia = hoyISO()) {
-  if (!datos.ultimoDia) return 0;
-  const hueco = diasEntre(datos.ultimoDia, dia);
-  return hueco <= 1 ? datos.racha : 0;
-}
-
-/** Los siete días hasta hoy, marcando en cuáles hubo actividad. */
-export function semana(datos, dia = hoyISO()) {
-  const [y, m, d] = dia.split("-").map(Number);
-  const salida = [];
-  for (let i = 6; i >= 0; i--) {
-    const f = new Date(y, m - 1, d - i);
-    const iso = hoyISO(f);
-    salida.push({
-      iso,
-      diaSemana: f.getDay(),
-      activo: datos.dias.includes(iso),
-      esHoy: i === 0,
-    });
-  }
-  return salida;
-}
 
 function leer() {
   try {
@@ -208,25 +168,14 @@ export function ProveedorProgreso({ children }) {
     setDatos((d) => {
       const xp = d.xp + cantidad;
       const nuevosCofres = Math.floor(xp / META);
-
-      let { racha, mejorRacha, ultimoDia, dias } = d;
-      if (ultimoDia !== ahora) {
-        const hueco = ultimoDia ? diasEntre(ultimoDia, ahora) : Infinity;
-        racha = hueco === 1 ? racha + 1 : 1;
-        ultimoDia = ahora;
-        dias = [...dias, ahora].slice(-40);
-        mejorRacha = Math.max(mejorRacha, racha);
-      }
+      // La racha la resuelve tocarDia, que está cubierta por tests
+      const conRacha = tocarDia(d, ahora);
 
       return {
+        ...conRacha,
         xp: xp % META,
         total: d.total + cantidad,
         cofres: d.cofres + nuevosCofres,
-        pegatinas: d.pegatinas,
-        racha,
-        mejorRacha,
-        ultimoDia,
-        dias,
       };
     });
 

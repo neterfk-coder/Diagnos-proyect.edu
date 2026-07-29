@@ -176,7 +176,16 @@ export default function PanelDocente() {
                         <ContadorAnimado valor={totalGeneral} />
                       </p>
                     </div>
-                    <div className="tarjeta tarjeta-viva p-6 sm:col-span-2">
+                    <div className="tarjeta tarjeta-viva p-6">
+                      <p className="etiqueta">{t.docente.superadasTitulo}</p>
+                      <p className="titulo mt-2 text-5xl font-semibold text-cobalto">
+                        <ContadorAnimado valor={datos.totalSuperadas || 0} />
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-acero">
+                        {t.docente.superadasTexto}
+                      </p>
+                    </div>
+                    <div className="tarjeta tarjeta-viva p-6">
                       <p className="etiqueta">{t.docente.dominante}</p>
                       <p className="titulo mt-2 text-2xl font-semibold text-ambar">
                         {dominante ? dominante.nombre : "—"}
@@ -217,12 +226,23 @@ export default function PanelDocente() {
                                 · {detalle ? detalle.nombre : t.docente.sinClasificar}
                               </p>
                               <p className="shrink-0 font-mono text-xs text-acero">
-                                {f.total} {t.docente.casos} · {pct}%
+                                {f.total} {t.docente.casos}
+                                {f.superadas > 0 && (
+                                  <span className="text-cobalto">
+                                    {" · "}
+                                    {f.superadas} {t.docente.superadas}
+                                  </span>
+                                )}
+                                {" · "}
+                                {pct}%
                               </p>
                             </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-hielo/70">
+                            {/* Dos capas: el error cometido en naranja y, encima,
+                                la parte ya superada en azul. Así se ve de un
+                                vistazo cuánto queda por re-enseñar. */}
+                            <div className="relative h-2 overflow-hidden rounded-full bg-hielo/70">
                               <div
-                                className="barra-calor"
+                                className="barra-calor absolute inset-y-0 left-0"
                                 style={{
                                   width: barrasListas
                                     ? `${(f.total / maximo) * 100}%`
@@ -230,6 +250,17 @@ export default function PanelDocente() {
                                   transitionDelay: `${i * 90}ms`,
                                 }}
                               />
+                              {f.superadas > 0 && (
+                                <div
+                                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-electrico to-celeste transition-all duration-700"
+                                  style={{
+                                    width: barrasListas
+                                      ? `${(Math.min(f.superadas, f.total) / maximo) * 100}%`
+                                      : "0%",
+                                    transitionDelay: `${i * 90 + 250}ms`,
+                                  }}
+                                />
+                              )}
                             </div>
                           </div>
                         );

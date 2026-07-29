@@ -30,6 +30,7 @@ const CLAVE = process.env.APPWRITE_API_KEY;
 const BASE_DATOS = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "diagnos";
 const TABLA = process.env.NEXT_PUBLIC_APPWRITE_TABLE_DIAGNOSTICOS || "diagnosticos";
 const TABLA_MENSAJES = process.env.APPWRITE_TABLE_MENSAJES || "mensajes";
+const TABLA_SUPERACIONES = process.env.APPWRITE_TABLE_SUPERACIONES || "superaciones";
 
 if (!ENDPOINT || !PROYECTO || !CLAVE) {
   console.error(
@@ -207,6 +208,36 @@ async function main() {
       bd.createVarcharColumn({
         databaseId: BASE_DATOS,
         tableId: TABLA_MENSAJES,
+        key: clave,
+        size: tamano,
+        required: requerida,
+      })
+    );
+  }
+
+  // ---------------- Superaciones ----------------
+  // Un registro por cada vez que alguien supera una concepción errónea. Sin
+  // identificador de usuario: la promesa de anonimato de la política de
+  // privacidad vale también aquí, y para el panel docente basta el recuento.
+  console.log("\nTabla de superaciones:");
+  await crear(`tabla "${TABLA_SUPERACIONES}"`, () =>
+    bd.createTable({
+      databaseId: BASE_DATOS,
+      tableId: TABLA_SUPERACIONES,
+      name: "Superaciones",
+      permissions: [],
+      rowSecurity: false,
+    })
+  );
+
+  for (const [clave, tamano, requerida] of [
+    ["misconception", 16, true],
+    ["aula", 64, false],
+  ]) {
+    await crear(`${clave} (varchar ${tamano})`, () =>
+      bd.createVarcharColumn({
+        databaseId: BASE_DATOS,
+        tableId: TABLA_SUPERACIONES,
         key: clave,
         size: tamano,
         required: requerida,

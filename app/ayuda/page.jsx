@@ -5,7 +5,7 @@ import Acordeon from "@/components/Acordeon";
 import RevelarAlScroll from "@/components/RevelarAlScroll";
 import { useIdioma } from "@/lib/i18n/contexto";
 import { useTutorial } from "@/lib/tutorial";
-import { CATALOGO, textoMisconception } from "@/lib/misconceptions";
+import { CATALOGO, REFERENCIAS, textoMisconception } from "@/lib/misconceptions";
 
 export default function Ayuda() {
   const { t, idioma } = useIdioma();
@@ -79,10 +79,35 @@ export default function Ayuda() {
                 <p className="mt-1.5 text-sm font-light leading-relaxed text-acero">
                   {d.descripcion}
                 </p>
+                {m.fuente && (
+                  <p className="mt-2.5 border-t border-hielo pt-2 text-[11px] leading-snug text-acero/75">
+                    {m.fuente}
+                  </p>
+                )}
               </RevelarAlScroll>
             );
           })}
         </ul>
+      </section>
+
+      {/* ---------- Referencias ---------- */}
+      <section id="referencias" className="mt-16 scroll-mt-24">
+        <h2 className="titulo text-2xl font-semibold text-white">
+          {a.referencias.titulo}
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm font-light leading-relaxed text-acero">
+          {a.referencias.entrada}
+        </p>
+        <ol className="mt-6 space-y-3">
+          {REFERENCIAS.map((r) => (
+            <li
+              key={r.clave}
+              className="border-l-2 border-ambar/40 pl-4 text-sm leading-relaxed text-acero"
+            >
+              {r.cita}
+            </li>
+          ))}
+        </ol>
       </section>
 
       {/* ---------- Accesibilidad ---------- */}

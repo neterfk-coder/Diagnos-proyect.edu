@@ -51,10 +51,69 @@ export const COLORES_RAREZA = {
   },
 };
 
+/** Hitos de racha que merecen celebración aparte. */
+export const HITOS = [3, 7, 14, 30, 60, 100, 365];
+
 const CLAVE = "diagnos:progreso";
 const Contexto = createContext(null);
 
-const INICIAL = { xp: 0, total: 0, cofres: 0, pegatinas: [] };
+const INICIAL = {
+  xp: 0,
+  total: 0,
+  cofres: 0,
+  pegatinas: [],
+  racha: 0,
+  mejorRacha: 0,
+  ultimoDia: null,
+  dias: [],
+};
+
+/** Fecha local en formato AAAA-MM-DD. Nada de UTC: la racha es del usuario. */
+export function hoyISO(fecha = new Date()) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Días completos entre dos fechas ISO, contando por días naturales. */
+function diasEntre(desdeISO, hastaISO) {
+  const [a1, m1, d1] = desdeISO.split("-").map(Number);
+  const [a2, m2, d2] = hastaISO.split("-").map(Number);
+  const a = Date.UTC(a1, m1 - 1, d1);
+  const b = Date.UTC(a2, m2 - 1, d2);
+  return Math.round((b - a) / 86400000);
+}
+
+/**
+ * Racha que se puede mostrar hoy.
+ *
+ * Lo guardado puede estar caducado: si la última actividad fue anteayer, la
+ * racha ya se rompió aunque el número siga escrito en el almacenamiento.
+ * Ayer todavía cuenta, porque el día no ha terminado.
+ */
+export function rachaVigente(datos, dia = hoyISO()) {
+  if (!datos.ultimoDia) return 0;
+  const hueco = diasEntre(datos.ultimoDia, dia);
+  return hueco <= 1 ? datos.racha : 0;
+}
+
+/** Los siete días hasta hoy, marcando en cuáles hubo actividad. */
+export function semana(datos, dia = hoyISO()) {
+  const [y, m, d] = dia.split("-").map(Number);
+  const salida = [];
+  for (let i = 6; i >= 0; i--) {
+    const f = new Date(y, m - 1, d - i);
+    const iso = hoyISO(f);
+    salida.push({
+      iso,
+      diaSemana: f.getDay(),
+      activo: datos.dias.includes(iso),
+      esHoy: i === 0,
+    });
+  }
+  return salida;
+}
 
 function leer() {
   try {
@@ -66,6 +125,10 @@ function leer() {
       total: Number(d.total) || 0,
       cofres: Number(d.cofres) || 0,
       pegatinas: Array.isArray(d.pegatinas) ? d.pegatinas : [],
+      racha: Number(d.racha) || 0,
+      mejorRacha: Number(d.mejorRacha) || 0,
+      ultimoDia: typeof d.ultimoDia === "string" ? d.ultimoDia : null,
+      dias: Array.isArray(d.dias) ? d.dias.slice(-40) : [],
     };
   } catch {
     return INICIAL;
@@ -91,6 +154,8 @@ export function ProveedorProgreso({ children }) {
   const [montado, setMontado] = useState(false);
   const [ultimoPremio, setUltimoPremio] = useState(null);
   const [ganancia, setGanancia] = useState(null);
+  const [celebracion, setCelebracion] = useState(null);
+  const [dia, setDia] = useState(hoyISO());
 
   // Se arranca en cero para que el HTML del servidor y el del cliente
   // coincidan; lo guardado se aplica ya hidratado.
@@ -108,24 +173,66 @@ export function ProveedorProgreso({ children }) {
     }
   }, [datos, montado]);
 
-  /** Suma experiencia. El motivo sirve para el aviso flotante. */
+  // La fecha se revisa cada minuto: si alguien deja la pestaña abierta y
+  // cruza la medianoche, la racha debe reflejarlo sin recargar.
+  useEffect(() => {
+    const reloj = setInterval(() => {
+      const ahora = hoyISO();
+      setDia((anterior) => (anterior === ahora ? anterior : ahora));
+    }, 60000);
+    return () => clearInterval(reloj);
+  }, []);
+
+  /** Suma experiencia y da por vivido el día de hoy. */
   const sumar = useCallback((motivo) => {
     const cantidad = RECOMPENSAS[motivo];
     if (!cantidad) return;
 
+    const ahora = hoyISO();
+    let subioRacha = null;
+
     setDatos((d) => {
       const xp = d.xp + cantidad;
       const nuevosCofres = Math.floor(xp / META);
+
+      // --- Racha ---
+      let { racha, mejorRacha, ultimoDia, dias } = d;
+      if (ultimoDia !== ahora) {
+        const hueco = ultimoDia ? diasEntre(ultimoDia, ahora) : Infinity;
+        racha = hueco === 1 ? racha + 1 : 1;
+        ultimoDia = ahora;
+        dias = [...dias, ahora].slice(-40);
+        mejorRacha = Math.max(mejorRacha, racha);
+        subioRacha = racha;
+      }
+
       return {
         xp: xp % META,
         total: d.total + cantidad,
         cofres: d.cofres + nuevosCofres,
         pegatinas: d.pegatinas,
+        racha,
+        mejorRacha,
+        ultimoDia,
+        dias,
       };
     });
 
     setGanancia({ motivo, cantidad, sello: Date.now() });
     setTimeout(() => setGanancia(null), 2600);
+
+    // La celebración va después del render para que el número ya esté puesto
+    if (subioRacha !== null) {
+      setTimeout(
+        () =>
+          setCelebracion({
+            dias: subioRacha,
+            hito: HITOS.includes(subioRacha),
+            sello: Date.now(),
+          }),
+        700
+      );
+    }
   }, []);
 
   /** Abre un cofre y devuelve la pegatina que toca. */
@@ -157,6 +264,13 @@ export function ProveedorProgreso({ children }) {
         hayCofre: datos.cofres > 0,
         ganancia,
         ultimoPremio,
+        // La racha mostrada se recalcula contra el día actual, no se lee tal
+        // cual: lo guardado puede haber caducado desde la última visita.
+        racha: rachaVigente(datos, dia),
+        rachaHoy: datos.ultimoDia === dia,
+        semana: semana(datos, dia),
+        celebracion,
+        cerrarCelebracion: () => setCelebracion(null),
         sumar,
         abrirCofre,
         reiniciar,

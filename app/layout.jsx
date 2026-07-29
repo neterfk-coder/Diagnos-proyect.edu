@@ -5,6 +5,7 @@ import FondoAnimado from "@/components/FondoAnimado";
 import { ProveedorIdioma } from "@/lib/i18n/contexto";
 import { ProveedorSesion } from "@/lib/sesion";
 import { ProveedorProgreso } from "@/lib/progreso";
+import CelebracionRacha from "@/components/progreso/CelebracionRacha";
 
 export const metadata = {
   title: "Diagnos — Fix your reasoning, not just your answer",
@@ -32,6 +33,7 @@ export default function RootLayout({ children }) {
               <Nav />
               <main className="min-h-screen">{children}</main>
               <Pie />
+              <CelebracionRacha />
             </ProveedorProgreso>
           </ProveedorSesion>
         </ProveedorIdioma>

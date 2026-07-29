@@ -7,6 +7,7 @@ import { useSesion } from "@/lib/sesion";
 import { useIdioma } from "@/lib/i18n/contexto";
 import SelectorIdioma from "@/components/SelectorIdioma";
 import BarraProgreso from "@/components/progreso/BarraProgreso";
+import Racha from "@/components/progreso/Racha";
 
 /** Rutas que traen su propia cáscara a pantalla completa. */
 const RUTAS_ACCESO = ["/entrar", "/registro", "/recuperar"];
@@ -63,6 +64,8 @@ export default function Nav() {
           ))}
 
           <span className="mx-1 hidden h-5 w-px bg-hielo sm:block" />
+
+          <Racha />
 
           <BarraProgreso />
 

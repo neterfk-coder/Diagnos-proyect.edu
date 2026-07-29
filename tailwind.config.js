@@ -114,6 +114,28 @@ module.exports = {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
         },
+        // --- Racha ---
+        llama: {
+          "0%, 100%": { transform: "scale(1) rotate(-2deg)" },
+          "25%": { transform: "scale(1.08) rotate(2deg)" },
+          "50%": { transform: "scale(0.97) rotate(-1deg)" },
+          "75%": { transform: "scale(1.05) rotate(1.5deg)" },
+        },
+        crecerRacha: {
+          "0%": { opacity: "0", transform: "scale(0.4)" },
+          "55%": { opacity: "1", transform: "scale(1.25)" },
+          "75%": { transform: "scale(0.94)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        entrarDia: {
+          from: { opacity: "0", transform: "scale(0.5) translateY(6px)" },
+          to: { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        ascuas: {
+          from: { opacity: "0.9", transform: "translateY(0) scale(1)" },
+          to: { opacity: "0", transform: "translateY(-70px) scale(0.3)" },
+        },
+
         // --- Sistema de recompensas ---
         temblarCofre: {
           "0%, 100%": { transform: "rotate(0deg) scale(1)" },
@@ -182,6 +204,10 @@ module.exports = {
         revelar: "revelar 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
         "gradiente-vivo": "gradienteVivo 9s ease-in-out infinite",
         derivar: "derivar 26s ease-in-out infinite",
+        llama: "llama 2.4s ease-in-out infinite",
+        "crecer-racha": "crecerRacha 0.85s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "entrar-dia": "entrarDia 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
+        ascuas: "ascuas 1.6s ease-out infinite",
         "temblar-cofre": "temblarCofre 0.6s ease-in-out 2",
         estallar: "estallar 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards",
         "revelar-premio": "revelarPremio 0.75s cubic-bezier(0.22, 1, 0.36, 1) both",

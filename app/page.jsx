@@ -76,7 +76,7 @@ export default function Inicio() {
 
             <div className="tarjeta tarjeta-viva relative p-7 shadow-tarjeta sm:p-9">
               <div className="mb-6 flex items-center justify-between">
-                <p className="etiqueta">{t.inicio.tarjetaEtiqueta}</p>
+                <p className="etiqueta-acento">{t.inicio.tarjetaEtiqueta}</p>
                 <span className="font-mono text-xs text-acero">
                   {t.inicio.tarjetaPagina}
                 </span>
@@ -95,7 +95,7 @@ export default function Inicio() {
 
       {/* ================= EL PROBLEMA ================= */}
       <section className="mx-auto max-w-3xl px-6 py-20 text-center sm:py-24">
-        <p className="etiqueta">{t.inicio.problemaEtiqueta}</p>
+        <p className="etiqueta-acento">{t.inicio.problemaEtiqueta}</p>
         <h2 className="titulo mt-4 text-3xl font-semibold leading-snug text-white sm:text-4xl">
           {t.inicio.problemaTitulo}
         </h2>
@@ -110,14 +110,14 @@ export default function Inicio() {
 
       {/* ================= MÉTODO ================= */}
       <section id="metodo" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-20 sm:py-24">
-        <p className="etiqueta text-center">{t.inicio.metodoEtiqueta}</p>
+        <p className="etiqueta-acento text-center">{t.inicio.metodoEtiqueta}</p>
         <h2 className="titulo mt-4 text-center text-3xl font-semibold text-white sm:text-4xl">
           {t.inicio.metodoTitulo}
         </h2>
         <div className="mt-14 grid gap-x-10 gap-y-12 sm:grid-cols-2">
           {t.inicio.metodo.map((p, i) => (
             <RevelarAlScroll key={p.titulo} retraso={i * 110} className="flex gap-5">
-              <span className="titulo mt-0.5 text-4xl font-semibold leading-none text-hielo">
+              <span className="titulo mt-0.5 text-4xl font-semibold leading-none text-ambar/35">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <div>
@@ -167,7 +167,7 @@ export default function Inicio() {
       <section className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <p className="etiqueta">{t.inicio.docenteEtiqueta}</p>
+            <p className="etiqueta-acento">{t.inicio.docenteEtiqueta}</p>
             <h2 className="titulo mt-4 text-3xl font-semibold leading-snug text-white sm:text-4xl">
               {t.inicio.docenteTitulo}
             </h2>

@@ -73,7 +73,7 @@ export default function ZonaCarga({ onAnalizar, cargando }) {
 
   return (
     <div className="tarjeta p-6 sm:p-8">
-      <p className="etiqueta">{t.zonaCarga.paso1}</p>
+      <p className="etiqueta-acento">{t.zonaCarga.paso1}</p>
       <h2 className="titulo mt-2 text-2xl font-semibold">{t.zonaCarga.titulo}</h2>
       <p className="mt-2 text-sm leading-relaxed text-acero">
         {t.zonaCarga.entrada}

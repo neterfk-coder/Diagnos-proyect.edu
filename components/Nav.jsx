@@ -55,7 +55,7 @@ export default function Nav() {
               href={e.href}
               className={`rounded-full px-4 py-2 text-sm transition-colors ${
                 ruta === e.href
-                  ? "bg-nube font-medium text-cobalto"
+                  ? "bg-ambar/15 font-medium text-ambar"
                   : "text-acero hover:text-tinta"
               }`}
             >

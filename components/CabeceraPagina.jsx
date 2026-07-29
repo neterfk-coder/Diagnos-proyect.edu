@@ -11,7 +11,7 @@ export default function CabeceraPagina({ etiqueta, titulo, entrada, meta }) {
     <header className="animate-aparecer">
       <Link
         href="/"
-        className="group inline-flex items-center gap-2 text-sm text-acero transition-colors hover:text-cobalto"
+        className="group inline-flex items-center gap-2 text-sm text-acero transition-colors hover:text-ambar"
       >
         <svg
           width="15"
@@ -30,7 +30,7 @@ export default function CabeceraPagina({ etiqueta, titulo, entrada, meta }) {
         {t.paginas.volver}
       </Link>
 
-      <p className="etiqueta mt-8">{etiqueta}</p>
+      <p className="etiqueta-acento mt-8">{etiqueta}</p>
       <h1 className="titulo mt-3 text-4xl font-semibold leading-tight text-white sm:text-5xl">
         {titulo}
       </h1>

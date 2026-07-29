@@ -23,7 +23,7 @@ export default function BotonEnvio({
       className={`${
         acento ? "boton-acento" : "boton-primario"
       } relative w-full overflow-hidden !py-3.5 disabled:!opacity-100 ${
-        listo ? (acento ? "!bg-ambarVivo" : "!bg-celeste") : ""
+        listo ? "!bg-ambarVivo" : ""
       }`}
       {...props}
     >

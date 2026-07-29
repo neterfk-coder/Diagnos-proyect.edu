@@ -172,7 +172,7 @@ export default function PanelDocente() {
                   <div className="mt-8 grid gap-4 sm:grid-cols-3">
                     <div className="tarjeta tarjeta-viva p-6">
                       <p className="etiqueta">{t.docente.registrados}</p>
-                      <p className="titulo mt-2 text-5xl font-semibold text-white">
+                      <p className="titulo mt-2 text-5xl font-semibold text-ambar">
                         <ContadorAnimado valor={totalGeneral} />
                       </p>
                     </div>

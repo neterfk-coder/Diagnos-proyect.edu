@@ -121,6 +121,11 @@ body {
   @apply text-[11px] font-medium uppercase tracking-etiqueta text-acero;
 }
 
+/* Etiqueta de sección destacada: la misma tipografía, en naranja */
+.etiqueta-acento {
+  @apply text-[11px] font-semibold uppercase tracking-etiqueta text-ambar;
+}
+
 .etiqueta-clara {
   @apply text-[11px] font-medium uppercase tracking-etiqueta text-bruma;
 }
@@ -131,7 +136,7 @@ body {
 }
 .divisor::after {
   content: "";
-  @apply absolute left-1/2 top-1/2 h-[5px] w-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cobalto;
+  @apply absolute left-1/2 top-1/2 h-[5px] w-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-ambar;
 }
 
 /* Enlace discreto con subrayado fino */
@@ -140,9 +145,16 @@ body {
 }
 
 /* Botones */
-/* Botón principal: azul brillante con texto abisal. Sobre una interfaz
-   oscura, invertir el contraste rinde mucho mejor que blanco sobre azul. */
+/* Botón principal.
+   La regla de color de la interfaz: el naranja es la acción, el azul es la
+   superficie. Todo lo que el usuario puede pulsar para avanzar va en
+   naranja; el azul queda para el fondo, los bordes y la estructura. */
 .boton-primario {
+  @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-ambar px-7 py-3 text-sm font-semibold text-abismo shadow-naranja transition-all duration-300 hover:-translate-y-0.5 hover:bg-ambarVivo focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ambar disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
+}
+
+/* Variante azul, para cuando hay dos acciones y una debe ceder el paso */
+.boton-azul {
   @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-electrico px-7 py-3 text-sm font-medium text-abismo shadow-azul transition-all duration-300 hover:-translate-y-0.5 hover:bg-celeste focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-celeste disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
 }
 
@@ -188,7 +200,7 @@ body {
 
 /* Tarjeta que reacciona: se eleva y su sombra se tiñe de cobalto */
 .tarjeta-viva {
-  @apply transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-cobalto/30 hover:shadow-elevada;
+  @apply transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-ambar/40 hover:shadow-elevada;
 }
 
 /* Superficie de cristal sobre el fondo azul */
@@ -245,7 +257,7 @@ body {
 
 /* Barra de calor para el panel docente */
 .barra-calor {
-  @apply h-2 rounded-full bg-gradient-to-r from-electrico to-celeste shadow-azul transition-all duration-700;
+  @apply h-2 rounded-full bg-gradient-to-r from-ambar to-ambarVivo shadow-naranja transition-all duration-700;
 }
 
 /* ============================================================

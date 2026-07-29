@@ -220,7 +220,7 @@ export default function PracticaDirigida({ diagnostico }) {
 
   return (
     <div className="tarjeta p-6 sm:p-8">
-      <p className="etiqueta">{t.practica.paso4}</p>
+      <p className="etiqueta-acento">{t.practica.paso4}</p>
       <h3 className="titulo mt-2 text-2xl font-semibold text-white">
         {t.practica.titulo}
       </h3>

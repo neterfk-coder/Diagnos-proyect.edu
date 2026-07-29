@@ -24,7 +24,7 @@ export default function Ayuda() {
               retraso={i * 110}
               className="tarjeta tarjeta-viva p-6"
             >
-              <span className="titulo text-3xl font-semibold leading-none text-hielo">
+              <span className="titulo text-3xl font-semibold leading-none text-ambar/35">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <h3 className="titulo mt-3 text-lg font-semibold">{p.titulo}</h3>

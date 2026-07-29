@@ -109,7 +109,7 @@ export default function Tutor() {
                 height="20"
                 viewBox="0 0 24 24"
                 fill="none"
-                className="shrink-0 animate-girar text-cobalto"
+                className="shrink-0 animate-girar text-ambar"
                 aria-hidden="true"
               >
                 <circle
@@ -223,7 +223,7 @@ export default function Tutor() {
                     retraso={(i % 2) * 80}
                     className="tarjeta tarjeta-viva p-6"
                   >
-                    <span className="titulo text-3xl font-semibold leading-none text-hielo">
+                    <span className="titulo text-3xl font-semibold leading-none text-ambar/35">
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <h3 className="titulo mt-3 text-lg font-semibold text-white">
@@ -301,7 +301,7 @@ export default function Tutor() {
                       <p className="text-[15px] leading-relaxed text-tinta">
                         {e.enunciado}
                       </p>
-                      <span className="titulo shrink-0 text-2xl font-semibold leading-none text-hielo">
+                      <span className="titulo shrink-0 text-2xl font-semibold leading-none text-ambar/35">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     </div>

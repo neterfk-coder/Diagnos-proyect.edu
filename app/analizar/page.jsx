@@ -57,7 +57,7 @@ export default function Analizar() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
       <header className="mb-10 max-w-2xl">
-        <p className="etiqueta">{t.analizar.etiqueta}</p>
+        <p className="etiqueta-acento">{t.analizar.etiqueta}</p>
         <h1 className="titulo mt-3 text-4xl font-semibold leading-tight text-white sm:text-5xl">
           {t.analizar.titulo}
         </h1>
@@ -79,7 +79,7 @@ export default function Analizar() {
 
           {diagnostico && (
             <div className="tarjeta tarjeta-viva animate-aparecer p-6 sm:p-8">
-              <p className="etiqueta">{t.analizar.paso2}</p>
+              <p className="etiqueta-acento">{t.analizar.paso2}</p>
               <h2 className="titulo mt-2 text-2xl font-semibold">
                 {diagnostico.procedimiento_correcto
                   ? t.analizar.tituloCorrecto

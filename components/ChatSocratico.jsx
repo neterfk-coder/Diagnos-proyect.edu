@@ -53,7 +53,7 @@ export default function ChatSocratico({ diagnostico, onDescubierto }) {
   return (
     <div className="tarjeta flex h-full flex-col overflow-hidden">
       <div className="border-b border-hielo bg-nube px-6 py-4">
-        <p className="etiqueta">{t.chat.paso3}</p>
+        <p className="etiqueta-acento">{t.chat.paso3}</p>
         <h3 className="titulo mt-1 text-xl font-semibold">{t.chat.titulo}</h3>
       </div>
 

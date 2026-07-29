@@ -161,10 +161,10 @@ cannot query the diagnoses table at all — the table has no client permissions.
 their own preferences, and queries with the server API key. A student cannot request
 another classroom's data because the classroom is never a client-supplied parameter.
 
-Still unfinished:
-
-- **The contact form does not send.** It validates and confirms, but there is no mail
-  backend behind it yet.
+The contact form stores messages in a separate Appwrite table that has no client
+permissions, so the inbox is readable only from the Appwrite console. There is no
+mail delivery yet: the message is kept, not forwarded. A hidden honeypot field and
+length caps keep the endpoint from being an open spam target.
 
 ### Required setup step
 

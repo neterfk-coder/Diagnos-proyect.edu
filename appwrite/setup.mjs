@@ -29,6 +29,7 @@ const PROYECTO = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
 const CLAVE = process.env.APPWRITE_API_KEY;
 const BASE_DATOS = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "diagnos";
 const TABLA = process.env.NEXT_PUBLIC_APPWRITE_TABLE_DIAGNOSTICOS || "diagnosticos";
+const TABLA_MENSAJES = process.env.APPWRITE_TABLE_MENSAJES || "mensajes";
 
 if (!ENDPOINT || !PROYECTO || !CLAVE) {
   console.error(
@@ -90,20 +91,34 @@ async function main() {
   console.log(`\nProyecto ${PROYECTO} · base de datos "${BASE_DATOS}"\n`);
 
   console.log("Base de datos:");
-  await crear(`base de datos "${BASE_DATOS}"`, () =>
-    bd.create({ databaseId: BASE_DATOS, name: "Diagnos" })
-  );
+  // Se comprueba antes de crear en vez de confiar en el 409: cuando el plan
+  // ya está al límite de bases de datos, Appwrite responde con un error de
+  // cuota y no con un conflicto, y el script dejaba de ser idempotente.
+  let existeBase = false;
+  try {
+    await bd.get({ databaseId: BASE_DATOS });
+    existeBase = true;
+    console.log(`  · base de datos "${BASE_DATOS}" (ya existía)`);
+  } catch {
+    existeBase = false;
+  }
+
+  if (!existeBase) {
+    await crear(`base de datos "${BASE_DATOS}"`, () =>
+      bd.create({ databaseId: BASE_DATOS, name: "Diagnos" })
+    );
+  }
 
   console.log("\nTabla:");
-  // Lectura pública (panel docente) y ninguna escritura para nadie: los
-  // inserts se hacen desde las rutas de API con la API key, que omite estos
-  // permisos.
+  // Sin permisos de cliente: el navegador no toca la base de datos. Tanto la
+  // escritura de diagnósticos como la lectura del panel docente pasan por
+  // rutas de API que usan la API key, que omite estos permisos.
   await crear(`tabla "${TABLA}"`, () =>
     bd.createTable({
       databaseId: BASE_DATOS,
       tableId: TABLA,
       name: "Diagnósticos",
-      permissions: [Permission.read(Role.any())],
+      permissions: [],
       rowSecurity: false,
     })
   );
@@ -167,6 +182,37 @@ async function main() {
     })
   );
   // No hace falta índice de fecha: Appwrite indexa $createdAt por defecto.
+
+  // ---------------- Mensajes del formulario de contacto ----------------
+  console.log("\nTabla de mensajes:");
+  await crear(`tabla "${TABLA_MENSAJES}"`, () =>
+    bd.createTable({
+      databaseId: BASE_DATOS,
+      tableId: TABLA_MENSAJES,
+      name: "Mensajes de contacto",
+      permissions: [], // solo servidor: nadie debe poder leer el buzón
+      rowSecurity: false,
+    })
+  );
+
+  const columnasMensaje = [
+    ["nombre", 120, true],
+    ["correo", 160, true],
+    ["asunto", 200, true],
+    ["mensaje", 4000, true],
+    ["idioma", 8, false],
+  ];
+  for (const [clave, tamano, requerida] of columnasMensaje) {
+    await crear(`${clave} (varchar ${tamano})`, () =>
+      bd.createVarcharColumn({
+        databaseId: BASE_DATOS,
+        tableId: TABLA_MENSAJES,
+        key: clave,
+        size: tamano,
+        required: requerida,
+      })
+    );
+  }
 
   console.log("\nDatos de ejemplo para la demo del panel docente:");
   const ejemplos = [

@@ -19,6 +19,8 @@ export default function Contacto() {
   const [errores, setErrores] = useState({});
   const [estado, setEstado] = useState("reposo");
   const [enviado, setEnviado] = useState(false);
+  const [aviso, setAviso] = useState(null);
+  const [trampa, setTrampa] = useState("");
 
   function validar() {
     const e = {};
@@ -33,15 +35,33 @@ export default function Contacto() {
 
   async function enviar(evento) {
     evento.preventDefault();
+    setAviso(null);
+
     const e = validar();
     setErrores(e);
     if (Object.keys(e).length > 0) return;
 
     setEstado("cargando");
-    // Todavía sin backend de correo: se simula la latencia real del envío.
-    await new Promise((r) => setTimeout(r, 1400));
-    setEstado("listo");
-    setTimeout(() => setEnviado(true), 800);
+    try {
+      const res = await fetch("/api/contacto", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: nombre.trim(),
+          correo: correo.trim(),
+          asunto: asunto.trim(),
+          mensaje: mensaje.trim(),
+          idioma,
+          web: trampa, // campo oculto: si viene relleno, es un bot
+        }),
+      });
+      if (!res.ok) throw new Error("envio");
+      setEstado("listo");
+      setTimeout(() => setEnviado(true), 800);
+    } catch {
+      setEstado("reposo");
+      setAviso(f.errorEnvio);
+    }
   }
 
   function reiniciar() {
@@ -158,6 +178,29 @@ export default function Contacto() {
                     )}
                   </div>
                 </div>
+
+                {/* Trampa para bots: invisible y fuera del orden de tabulación */}
+                <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                  <label htmlFor="web">No rellenar</label>
+                  <input
+                    id="web"
+                    name="web"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={trampa}
+                    onChange={(e) => setTrampa(e.target.value)}
+                  />
+                </div>
+
+                {aviso && (
+                  <p
+                    role="alert"
+                    className="mb-4 animate-aparecer rounded-2xl border border-ambar/40 bg-ambar/10 px-4 py-3 text-sm text-tinta"
+                  >
+                    {aviso}
+                  </p>
+                )}
 
                 <div
                   className="mt-2 animate-aparecer sm:max-w-xs"

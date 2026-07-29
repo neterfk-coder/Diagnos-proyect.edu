@@ -222,6 +222,27 @@ body {
   @apply w-full rounded-2xl border border-hielo bg-papel px-4 py-3 text-sm text-tinta placeholder-acero/60 transition-colors focus:border-cobalto focus:outline-none focus:ring-4 focus:ring-cobalto/[0.12];
 }
 
+/* ---- Control deslizante del laboratorio de funciones ----
+   Los input[type=range] necesitan pseudo-elementos propios de cada motor:
+   no hay forma de darles estilo con una sola regla. */
+.deslizador {
+  @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-hielo outline-none;
+}
+.deslizador::-webkit-slider-thumb {
+  @apply h-4 w-4 cursor-pointer appearance-none rounded-full border-2 border-abismo bg-ambar transition-transform;
+  box-shadow: 0 0 0 3px rgba(255, 159, 0, 0.25);
+}
+.deslizador::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.deslizador::-moz-range-thumb {
+  @apply h-4 w-4 cursor-pointer rounded-full border-2 border-abismo bg-ambar;
+  box-shadow: 0 0 0 3px rgba(255, 159, 0, 0.25);
+}
+.deslizador:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(255, 159, 0, 0.45);
+}
+
 /* Barra de calor para el panel docente */
 .barra-calor {
   @apply h-2 rounded-full bg-gradient-to-r from-electrico to-celeste shadow-azul transition-all duration-700;

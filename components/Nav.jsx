@@ -17,6 +17,7 @@ export default function Nav() {
   const { t } = useIdioma();
   const enlaces = [
     { href: "/analizar", texto: t.nav.analizar },
+    { href: "/grafica", texto: t.nav.grafica },
     { href: "/tutor", texto: t.nav.tutor },
     { href: "/docente", texto: t.nav.docente },
   ];

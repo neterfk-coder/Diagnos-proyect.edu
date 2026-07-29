@@ -9,6 +9,8 @@ import CelebracionRacha from "@/components/progreso/CelebracionRacha";
 import { ProveedorNotificaciones } from "@/lib/notificaciones";
 import Avisos from "@/components/notificaciones/Avisos";
 import PuenteAvisos from "@/components/notificaciones/PuenteAvisos";
+import { ProveedorTutorial } from "@/lib/tutorial";
+import Tutorial from "@/components/tutorial/Tutorial";
 
 export const metadata = {
   title: "Diagnos — Fix your reasoning, not just your answer",
@@ -32,6 +34,7 @@ export default function RootLayout({ children }) {
         <ProveedorIdioma>
           <ProveedorSesion>
             <ProveedorNotificaciones>
+            <ProveedorTutorial>
             <ProveedorProgreso>
               <FondoAnimado />
               <Nav />
@@ -40,7 +43,9 @@ export default function RootLayout({ children }) {
               <CelebracionRacha />
               <Avisos />
               <PuenteAvisos />
+              <Tutorial />
             </ProveedorProgreso>
+            </ProveedorTutorial>
             </ProveedorNotificaciones>
           </ProveedorSesion>
         </ProveedorIdioma>

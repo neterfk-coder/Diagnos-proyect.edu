@@ -4,10 +4,12 @@ import CabeceraPagina from "@/components/CabeceraPagina";
 import Acordeon from "@/components/Acordeon";
 import RevelarAlScroll from "@/components/RevelarAlScroll";
 import { useIdioma } from "@/lib/i18n/contexto";
+import { useTutorial } from "@/lib/tutorial";
 import { CATALOGO, textoMisconception } from "@/lib/misconceptions";
 
 export default function Ayuda() {
   const { t, idioma } = useIdioma();
+  const { abrir } = useTutorial();
   const a = t.paginas.ayuda;
 
   return (
@@ -16,7 +18,16 @@ export default function Ayuda() {
 
       {/* ---------- Primeros pasos ---------- */}
       <section className="mt-16">
-        <h2 className="titulo text-2xl font-semibold">{a.empezar.titulo}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="titulo text-2xl font-semibold">{a.empezar.titulo}</h2>
+          <button
+            type="button"
+            onClick={abrir}
+            className="boton-secundario !px-5 !py-2 text-xs"
+          >
+            {t.tutorial.verGuia}
+          </button>
+        </div>
         <div className="mt-7 grid gap-6 sm:grid-cols-3">
           {a.empezar.pasos.map((p, i) => (
             <RevelarAlScroll

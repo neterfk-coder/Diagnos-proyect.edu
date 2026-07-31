@@ -82,6 +82,7 @@ the teacher dashboard falls back to demonstration data.
 | `NEXT_PUBLIC_APPWRITE_DATABASE_ID` | no | Database holding the diagnoses |
 | `NEXT_PUBLIC_APPWRITE_TABLE_DIAGNOSTICOS` | no | Table id, defaults to `diagnosticos` |
 | `APPWRITE_API_KEY` | no | Server-side writes. Scopes: `tables.read/write`, `rows.read/write` |
+| `CODIGO_DOCENTE` | no | Secret required to switch a user's role to teacher (`/api/rol`). Without it, no one can become a teacher |
 
 ### Provisioning Appwrite
 
@@ -108,8 +109,20 @@ On the **free tier** the limit is tokens-per-minute and it varies by model:
 
 This is why `/api/tutor` truncates long documents: the document text *and* a long
 answer have to fit in a single request. Raising `MAX_CARACTERES` in
-`app/api/tutor/route.js` is safe on a paid tier. A 429 is surfaced to the user as a
-"wait a minute" message rather than a generic error.
+`app/api/tutor/route.js` is safe on a paid tier. Every route that calls Groq
+(`diagnose`, `exercises`, `socratic`, `verificar`, `tutor`) surfaces a 429 as a "wait
+a minute" message instead of a generic error, and `clienteGroq()` disables the SDK's
+own automatic retries: on the free tier a retried 429 always hits the same per-minute
+window, so retrying only delays the error — and on Vercel, where the function itself
+is killed at `maxDuration` (60s), that delay could eat the whole budget before the
+route ever gets to return its own message.
+
+A quick local check makes the ceiling concrete: 35 concurrent `/api/diagnose` calls
+(one classroom submitting at once) against the free tier land as roughly 2-6
+successes and the rest clean 429s, not failures — this is a capacity limit of the
+free tier, not a bug, and it is why the teacher dashboard and practice loop are
+built to tolerate an occasional "try again in a minute" rather than assuming every
+call succeeds.
 
 ---
 
@@ -165,6 +178,13 @@ The contact form stores messages in a separate Appwrite table that has no client
 permissions, so the inbox is readable only from the Appwrite console. There is no
 mail delivery yet: the message is kept, not forwarded. A hidden honeypot field and
 length caps keep the endpoint from being an open spam target.
+
+Becoming a teacher is not self-service: `updatePrefs()` lets any signed-in user write
+to their own preferences, so writing `rol: "docente"` straight from the client would
+let a student open the teacher dashboard with one click. Instead `/api/rol` verifies
+a `CODIGO_DOCENTE` server secret before writing the role, using the caller's own JWT
+to prove who they are — the same "server decides, client never self-declares"
+pattern used for the classroom code everywhere else in the app.
 
 ### Required setup step
 

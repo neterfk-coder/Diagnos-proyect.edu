@@ -48,7 +48,7 @@ function Logros() {
  */
 function SeccionAula({ sesion }) {
   const { t } = useIdioma();
-  const { actualizarPerfil } = useSesion();
+  const { actualizarPerfil, activarDocente } = useSesion();
   const p = t.paginas.perfil;
 
   const esDocente = sesion.rol === "docente";
@@ -56,14 +56,32 @@ function SeccionAula({ sesion }) {
   const [estado, setEstado] = useState("reposo");
   const [copiado, setCopiado] = useState(false);
 
-  async function guardar(rol, aula) {
+  // Volver a estudiante no pide nada; pasar a docente sí, así que vive aparte.
+  const [pidiendoCodigo, setPidiendoCodigo] = useState(false);
+  const [codigoDocente, setCodigoDocente] = useState("");
+  const [estadoDocente, setEstadoDocente] = useState("reposo");
+
+  async function guardar(aula) {
     setEstado("guardando");
     try {
-      await actualizarPerfil({ rol, aula });
+      await actualizarPerfil({ aula });
       setEstado("guardado");
       setTimeout(() => setEstado("reposo"), 2000);
     } catch {
       setEstado("reposo");
+    }
+  }
+
+  async function confirmarDocente(evento) {
+    evento.preventDefault();
+    setEstadoDocente("comprobando");
+    try {
+      await activarDocente(codigoDocente);
+      setPidiendoCodigo(false);
+      setCodigoDocente("");
+      setEstadoDocente("reposo");
+    } catch {
+      setEstadoDocente("error");
     }
   }
 
@@ -97,7 +115,9 @@ function SeccionAula({ sesion }) {
             <button
               key={r}
               type="button"
-              onClick={() => guardar(r, r === "docente" ? null : codigo)}
+              onClick={() =>
+                r === "docente" ? setPidiendoCodigo(true) : guardar(codigo)
+              }
               aria-pressed={sesion.rol === r}
               className={`relative z-10 rounded-xl px-3 py-2.5 text-sm transition-colors duration-300 ${
                 sesion.rol === r ? "font-medium text-tinta" : "text-acero"
@@ -107,6 +127,55 @@ function SeccionAula({ sesion }) {
             </button>
           ))}
         </div>
+
+        {pidiendoCodigo && (
+          <form
+            onSubmit={confirmarDocente}
+            className="mt-4 flex max-w-sm flex-wrap items-end gap-3 animate-aparecer"
+          >
+            <div className="min-w-[10rem] flex-1">
+              <label htmlFor="codigo-docente" className="etiqueta mb-2 block">
+                {p.codigoDocenteCampo}
+              </label>
+              <input
+                id="codigo-docente"
+                value={codigoDocente}
+                onChange={(e) => {
+                  setCodigoDocente(e.target.value);
+                  if (estadoDocente === "error") setEstadoDocente("reposo");
+                }}
+                autoFocus
+                translate="no"
+                className="notranslate campo font-mono tracking-[0.2em]"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={estadoDocente === "comprobando"}
+              className="boton-acento !px-5 !py-2.5 text-xs"
+            >
+              {estadoDocente === "comprobando"
+                ? p.codigoDocenteCargando
+                : p.codigoDocenteBoton}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPidiendoCodigo(false);
+                setCodigoDocente("");
+                setEstadoDocente("reposo");
+              }}
+              className="boton-secundario !px-5 !py-2.5 text-xs"
+            >
+              {p.codigoDocenteCancelar}
+            </button>
+            {estadoDocente === "error" && (
+              <p role="alert" className="w-full text-xs text-ambar">
+                {p.codigoDocenteError}
+              </p>
+            )}
+          </form>
+        )}
       </div>
 
       {/* Aula */}
@@ -153,7 +222,7 @@ function SeccionAula({ sesion }) {
             </div>
             <button
               type="button"
-              onClick={() => guardar("estudiante", codigo)}
+              onClick={() => guardar(codigo)}
               disabled={estado === "guardando"}
               className="boton-acento !px-6 !py-3 text-xs"
             >

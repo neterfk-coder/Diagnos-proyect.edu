@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { clienteGroq, MODELO_TEXTO, textoDeRespuesta } from "@/lib/groq";
+import { clienteGroq, MODELO_TEXTO, textoDeRespuesta, esLimiteDeTasa } from "@/lib/groq";
 import { textoMisconception } from "@/lib/misconceptions";
 
 export const maxDuration = 60;
@@ -65,6 +65,14 @@ export async function POST(peticion) {
 
     return NextResponse.json({ texto, descubierto });
   } catch (error) {
+    if (esLimiteDeTasa(error)) {
+      console.warn("[socratic] límite de tasa de Groq alcanzado");
+      return NextResponse.json(
+        { error: "Groq's per-minute limit was just reached.", codigo: "limite" },
+        { status: 429 }
+      );
+    }
+
     console.error("[socratic]", error);
     return NextResponse.json(
       { error: "The tutor could not reply. Please try again." },

@@ -5,6 +5,7 @@ import {
   extraerJSON,
   textoDeRespuesta,
   completarConEsquema,
+  esLimiteDeTasa,
 } from "@/lib/groq";
 import { textoMisconception } from "@/lib/misconceptions";
 
@@ -117,6 +118,14 @@ Final reminder: "enunciado" and "pista" in ${lengua}, and no hint may reveal the
 
     return NextResponse.json({ ejercicios });
   } catch (error) {
+    if (esLimiteDeTasa(error)) {
+      console.warn("[exercises] límite de tasa de Groq alcanzado");
+      return NextResponse.json(
+        { error: "Groq's per-minute limit was just reached.", codigo: "limite" },
+        { status: 429 }
+      );
+    }
+
     console.error("[exercises]", error);
     return NextResponse.json(
       { error: "The exercises could not be generated." },

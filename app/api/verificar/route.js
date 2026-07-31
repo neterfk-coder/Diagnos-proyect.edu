@@ -5,6 +5,7 @@ import {
   extraerJSON,
   textoDeRespuesta,
   completarConEsquema,
+  esLimiteDeTasa,
 } from "@/lib/groq";
 import { textoMisconception } from "@/lib/misconceptions";
 
@@ -118,6 +119,14 @@ export async function POST(peticion) {
 
     return NextResponse.json(extraerJSON(textoDeRespuesta(salida)));
   } catch (error) {
+    if (esLimiteDeTasa(error)) {
+      console.warn("[verificar] límite de tasa de Groq alcanzado");
+      return NextResponse.json(
+        { error: "Groq's per-minute limit was just reached.", codigo: "limite" },
+        { status: 429 }
+      );
+    }
+
     console.error("[verificar]", error);
     return NextResponse.json(
       { error: "The answer could not be checked. Please try again." },

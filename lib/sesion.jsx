@@ -7,6 +7,7 @@ import {
   crearCuenta,
   cerrarSesionRemota,
   guardarAula,
+  activarDocente as activarDocenteEnServidor,
   guardarPerfil,
   prefsActuales,
   aulaDeUsuario,
@@ -100,9 +101,17 @@ export function ProveedorSesion({ children }) {
     setSesion(SESION_INVITADO);
   }, []);
 
-  /** Cambia rol y/o aula y refresca la sesión con lo que confirme el servidor. */
-  const actualizarPerfil = useCallback(async ({ rol, aula }) => {
-    await guardarAula(aula, rol);
+  /** Une al aula como estudiante (o vuelve a estudiante) y refresca la sesión. */
+  const actualizarPerfil = useCallback(async ({ aula }) => {
+    await guardarAula(aula);
+    const usuario = await usuarioActual();
+    if (usuario) setSesion(desdeUsuario(usuario));
+    return usuario;
+  }, []);
+
+  /** Pasa a "docente" si el código es correcto; el servidor decide, no aquí. */
+  const activarDocente = useCallback(async (codigo) => {
+    await activarDocenteEnServidor(codigo);
     const usuario = await usuarioActual();
     if (usuario) setSesion(desdeUsuario(usuario));
     return usuario;
@@ -138,6 +147,7 @@ export function ProveedorSesion({ children }) {
         registrar,
         entrarComoInvitado,
         actualizarPerfil,
+        activarDocente,
         personalizar,
         salir,
         refrescar,

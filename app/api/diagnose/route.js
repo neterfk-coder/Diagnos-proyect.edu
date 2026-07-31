@@ -6,6 +6,7 @@ import {
   extraerJSON,
   textoDeRespuesta,
   completarConEsquema,
+  esLimiteDeTasa,
 } from "@/lib/groq";
 import { catalogoParaPrompt, buscarPorCodigo, CODIGOS } from "@/lib/misconceptions";
 import { registrarDiagnostico, usuarioDesdeJWT } from "@/lib/appwrite-servidor";
@@ -18,6 +19,11 @@ export const maxDuration = 60;
  * en el idioma que haya elegido en la interfaz.
  */
 const LENGUAS = { en: "English", es: "Spanish" };
+
+const MENSAJE_LIMITE = {
+  en: "Groq's per-minute limit was just reached — wait a minute and try again.",
+  es: "Se alcanzó el límite por minuto de Groq — espera un minuto y vuelve a intentarlo.",
+};
 
 /**
  * Esquema del diagnóstico. Con el modelo de texto se aplica en modo estricto,
@@ -134,8 +140,13 @@ neither the rule nor the corrected step appears anywhere in your answer.`;
 }
 
 export async function POST(peticion) {
+  // Fuera del try para que el catch sepa en qué idioma responder incluso si
+  // el fallo ocurre después de leer el cuerpo de la petición.
+  let idioma = "en";
   try {
-    const { texto, imagenBase64, tipoImagen, idioma, jwt } = await peticion.json();
+    const datos = await peticion.json();
+    idioma = datos.idioma;
+    const { texto, imagenBase64, tipoImagen, jwt } = datos;
 
     if (!texto && !imagenBase64) {
       return NextResponse.json(
@@ -216,6 +227,14 @@ export async function POST(peticion) {
 
     return NextResponse.json(diagnostico);
   } catch (error) {
+    if (esLimiteDeTasa(error)) {
+      console.warn("[diagnose] límite de tasa de Groq alcanzado");
+      return NextResponse.json(
+        { error: MENSAJE_LIMITE[idioma] || MENSAJE_LIMITE.en, codigo: "limite" },
+        { status: 429 }
+      );
+    }
+
     console.error("[diagnose]", error);
     return NextResponse.json(
       { error: "The diagnosis could not be completed. Check your API key and try again." },

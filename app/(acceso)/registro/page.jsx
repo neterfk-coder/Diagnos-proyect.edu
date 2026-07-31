@@ -17,13 +17,15 @@ import { useIdioma } from "@/lib/i18n/contexto";
 export default function Registro() {
   const router = useRouter();
   const { t } = useIdioma();
-  const { registrar, hayCuentas } = useSesion();
+  const { registrar, activarDocente, hayCuentas } = useSesion();
   const ROLES = t.acceso.roles;
+  const p = t.paginas.perfil;
 
   const [rol, setRol] = useState("estudiante");
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [clave, setClave] = useState("");
+  const [codigoDocente, setCodigoDocente] = useState("");
   const [acepta, setAcepta] = useState(false);
   const [errores, setErrores] = useState({});
   const [aviso, setAviso] = useState(null);
@@ -39,6 +41,7 @@ export default function Registro() {
     else if (clave.length < 8) e.clave = t.acceso.claveCorta;
     else if (evaluarClave(clave) < 2) e.clave = t.acceso.claveDebil;
     if (!acepta) e.acepta = t.acceso.faltaCondiciones;
+    if (rol === "docente" && !codigoDocente.trim()) e.codigoDocente = p.codigoDocenteError;
     return e;
   }
 
@@ -54,9 +57,26 @@ export default function Registro() {
 
     setEstado("cargando");
     try {
-      await registrar({ nombre: nombre.trim(), correo: correo.trim(), clave, rol });
+      // La cuenta nace siempre "estudiante"; pasar a "docente" es un paso
+      // aparte que el servidor verifica contra el código introducido.
+      await registrar({ nombre: nombre.trim(), correo: correo.trim(), clave });
+
+      let esDocente = false;
+      let esperaRedireccion = 700;
+      if (rol === "docente") {
+        try {
+          await activarDocente(codigoDocente);
+          esDocente = true;
+        } catch {
+          // La cuenta ya existe y hay sesión: no se pierde el registro, solo
+          // se queda en "estudiante" y puede corregirlo después.
+          setAviso(t.acceso.errores.codigoDocenteInvalido);
+          esperaRedireccion = 2200;
+        }
+      }
+
       setEstado("listo");
-      setTimeout(() => router.push(rol === "docente" ? "/docente" : "/analizar"), 700);
+      setTimeout(() => router.push(esDocente ? "/docente" : "/analizar"), esperaRedireccion);
     } catch (error) {
       setEstado("reposo");
       setAviso(t.acceso.errores[claveDeError(error)] || t.acceso.errores.generico);
@@ -164,6 +184,20 @@ export default function Registro() {
           />
           <FuerzaClave clave={clave} />
         </div>
+
+        {rol === "docente" && (
+          <CampoFlotante
+            id="codigo-docente"
+            etiqueta={p.codigoDocenteCampo}
+            valor={codigoDocente}
+            onChange={(v) => {
+              setCodigoDocente(v);
+              if (errores.codigoDocente) setErrores((e) => ({ ...e, codigoDocente: null }));
+            }}
+            error={errores.codigoDocente}
+            retraso={260}
+          />
+        )}
 
         <div className="mb-6 mt-2 animate-aparecer" style={{ animationDelay: "300ms" }}>
           <Casilla
